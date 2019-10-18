@@ -64,7 +64,7 @@ RUN a2enmod rewrite && \
             AllowOverride  All \n\
     </Directory>" >> /etc/apache2/sites-available/000-default.conf
 
-COPY file/start.sh /start.sh
+COPY files/start.sh /start.sh
 
 RUN chown -R www-data:www-data /var/www/html/magento/app/etc/ && \
     mkdir -p /var/www/html/magento/app/code/Magento  && \
@@ -81,4 +81,4 @@ RUN echo "\
 RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
     ln -sf /proc/self/fd/1 /var/log/apache2/error.log
 
-CMD cron && /start.sh
+CMD cron && /start.sh && apachectl -D FOREGROUND
