@@ -1,7 +1,5 @@
 FROM ubuntu:19.04
 
-COPY files/auth.json /root/.composer/auth.json
-
 ENV TZ=Europe/London
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
         apt-get update && apt-get install -yq --no-install-recommends \
@@ -46,7 +44,13 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN locale-gen en_US.UTF-8 en_GB.UTF-8
 
-RUN composer create-project --repository=https://repo.magento.com/ magento/project-community-edition /var/www/html/magento
+ARG MAGENTO_REPO_USERNAME=""
+ARG MAGENTO_REPO_PASSWORD=""
+COPY files/init-build.sh /init-build.sh
+RUN /init-build.sh && rm /init-build.sh && \
+    composer create-project --repository=https://repo.magento.com/ magento/project-community-edition /var/www/html/magento  && \
+    rm /root/.composer/auth.json
+
 
 RUN cd /var/www/html/magento && \
     chown -R www-data:www-data . && \
@@ -60,7 +64,7 @@ RUN a2enmod rewrite && \
             AllowOverride  All \n\
     </Directory>" >> /etc/apache2/sites-available/000-default.conf
 
-COPY files/etc/ /var/www/html/magento/app/etc
+COPY file/start.sh /start.sh
 
 RUN chown -R www-data:www-data /var/www/html/magento/app/etc/ && \
     mkdir -p /var/www/html/magento/app/code/Magento  && \
@@ -77,7 +81,4 @@ RUN echo "\
 RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
     ln -sf /proc/self/fd/1 /var/log/apache2/error.log
 
-
-
-
-CMD cron && apachectl -D FOREGROUND
+CMD cron && /start.sh

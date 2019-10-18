@@ -17,6 +17,7 @@ services:
     networks:
       - magentoworld
     volumes:
+      - ./files/etc:/var/www/html/magento/app/etc
       - ./src/SamplePaymentGateway:/var/www/html/magento/app/code/Magento/SamplePaymentGateway
       - ./src/CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
     links:
