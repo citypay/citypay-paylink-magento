@@ -13,8 +13,10 @@ services:
       - PHP_MAX_EXECUTION_TIME=300
       - PHP_POST_MAX_SIZE=500M
       - PHP_UPLOAD_MAX_FILESIZE=1024M
+      - PHP_EXTENSION_DEBUG=1
     ports:
       - "80:80"
+      - "9000:9000"
     networks:
       - magentoworld
     volumes:
@@ -26,7 +28,10 @@ services:
       - ./src/sample-module-payment-gateway:/var/www/html/magento/app/code/Magento/sample-module-payment-gateway
       - ./src/CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
       - ./src/phptest:/var/www/html/phptest
-      - ./src/php.ini:/etc/php/7.2/cli/php2.ini
+      - ./src/25-xdebug.ini:/etc/php/7.2/cli/conf.d/25-xdebug.ini
+      - ./src/25-xdebug.ini:/etc/php/7.2/apache2/conf.d/25-xdebug.ini
+ #     - ./src/php.ini:/etc/php/7.2/cli/php2.ini
+
     links:
       - mysql
     command:  /bin/bash
