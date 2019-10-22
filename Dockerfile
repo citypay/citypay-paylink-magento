@@ -81,4 +81,9 @@ RUN echo "\
 RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
     ln -sf /proc/self/fd/1 /var/log/apache2/error.log
 
+RUN apt-get update && apt-get install -yq --no-install-recommends \
+    php-xdebug
+#CMD cron
+#&& apachectl -D FOREGROUND
+ #&& /start.sh
 CMD cron && /start.sh && apachectl -D FOREGROUND

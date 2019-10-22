@@ -2,8 +2,9 @@ version: '3'
 services:
   web:
     image: citypay/magento2:latest
+    #phpdbg
     container_name: web
-    restart: always
+    restart: "no"
     environment:
       - WEB_DOCUMENT_ROOT=/var/www/html/magento
       - PHP_DATE_TIMEZONE=EST
@@ -17,15 +18,24 @@ services:
     networks:
       - magentoworld
     volumes:
+#      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\files\etc:/var/www/html/magento/app/etc
+#      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\src\SamplePaymentGateway:/var/www/html/magento/app/code/Magento/SamplePaymentGateway
+#      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\src\CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
       - ./files/etc:/var/www/html/magento/app/etc
       - ./src/SamplePaymentGateway:/var/www/html/magento/app/code/Magento/SamplePaymentGateway
+      - ./src/sample-module-payment-gateway:/var/www/html/magento/app/code/Magento/sample-module-payment-gateway
       - ./src/CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
+      - ./src/phptest:/var/www/html/phptest
+      - ./src/php.ini:/etc/php/7.2/cli/php2.ini
     links:
       - mysql
+    command:  /bin/bash
+    stdin_open: true
+    tty: true
   mysql:
     image: mariadb:10
     container_name: mysql
-    restart: always
+    restart: "no"
     ports:
       - "3306:3306"
     environment:
@@ -34,6 +44,8 @@ services:
     networks:
       - magentoworld
     volumes:
+     # - C:\Users\marti\IdeaProjects\citypay-paylink-magento\data:/var/lib/mysql
+      - ./config:/etc/mysql/conf.d
       - ./data:/var/lib/mysql
 networks:
   magentoworld:
