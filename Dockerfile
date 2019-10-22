@@ -44,12 +44,27 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN locale-gen en_US.UTF-8 en_GB.UTF-8
 
-ARG MAGENTO_REPO_USERNAME=""
-ARG MAGENTO_REPO_PASSWORD=""
-COPY files/init-build.sh /init-build.sh
-RUN /init-build.sh && rm /init-build.sh && \
-    composer create-project --repository=https://repo.magento.com/ magento/project-community-edition /var/www/html/magento  && \
-    rm /root/.composer/auth.json
+ARG A_MAGENTO_REPO_USERNAME=""
+ARG A_MAGENTO_REPO_PASSWORD=""
+ENV MAGENTO_REPO_USERNAME=$A_MAGENTO_REPO_USERNAME
+ENV MAGENTO_REPO_PASSWORD=$A_MAGENTO_REPO_PASSWORD
+
+#COPY files/init-build.sh /init-build.sh
+#RUN chmod +x /init-build.sh \
+#    /init-build.sh && rm /init-build.sh && \
+RUN echo "\
+    { \n\
+      \"http-basic\": {\n\
+        \"repo.magento.com\": { \n\
+          \"username\": \"$A_MAGENTO_REPO_USERNAME\", \n\
+          \"password\": \"$A_MAGENTO_REPO_PASSWORD\" \n\
+        } \n\
+      } \n\
+    } \
+    " > /root/.composer/auth.json   && \
+    composer create-project --repository=https://repo.magento.com/ magento/project-community-edition /var/www/html/magento
+    #  && \
+    #rm /root/.composer/auth.json
 
 
 RUN cd /var/www/html/magento && \
@@ -64,7 +79,7 @@ RUN a2enmod rewrite && \
             AllowOverride  All \n\
     </Directory>" >> /etc/apache2/sites-available/000-default.conf
 
-COPY file/start.sh /start.sh
+#COPY files/start.sh /start.sh
 
 RUN chown -R www-data:www-data /var/www/html/magento/app/etc/ && \
     mkdir -p /var/www/html/magento/app/code/Magento  && \
@@ -81,4 +96,8 @@ RUN echo "\
 RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
     ln -sf /proc/self/fd/1 /var/log/apache2/error.log
 
-CMD cron && /start.sh
+RUN apt-get update && apt-get install -yq --no-install-recommends \
+    php-xdebug
+#CMD cron
+#&& apachectl -D FOREGROUND
+ #&& /start.sh

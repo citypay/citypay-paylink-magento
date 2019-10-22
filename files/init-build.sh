@@ -6,6 +6,8 @@ cat >/root/.composer/auth.json <<- EOM
         "repo.magento.com": {
           "username": "$MAGENTO_REPO_USERNAME",
           "password": "$MAGENTO_REPO_PASSWORD"
+          "ausername": "$A_MAGENTO_REPO_USERNAME",
+          "apassword": "$A_MAGENTO_REPO_PASSWORD"
         }
       }
     }

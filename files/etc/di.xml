@@ -266,6 +266,26 @@
             <argument name="ident" xsi:type="string">Magento</argument>
         </arguments>
     </type>
+    <virtualType name="Magento\Payment\Model\Method\MyCustomDebug" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/payment.log</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="Magento\Payment\Model\Method\MyCustomLogger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="debug" xsi:type="object">Magento\Payment\Model\Method\MyCustomDebug</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="Magento\Payment\Model\Method\Logger">
+        <arguments>
+            <argument name="logger" xsi:type="object">Magento\Payment\Model\Method\MyCustomLogger</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="debug" xsi:type="object">Magento\Payment\Model\Method\MyCustomDebug</item>
+            </argument>
+        </arguments>
+    </type>
     <type name="Magento\Framework\Model\Context">
         <arguments>
             <argument name="actionValidator" xsi:type="object">Magento\Framework\Model\ActionValidator\RemoveAction\Proxy</argument>
