@@ -7,6 +7,10 @@
 -->
 
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+
+    <preference for="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface" type="CityPay\Paylink\Model\PaylinkTokenInformationManagement" />
+
     <!-- Payment Method Facade configuration -->
     <virtualType name="SamplePaymentGatewayFacade" type="Magento\Payment\Model\Method\Adapter">
         <arguments>
