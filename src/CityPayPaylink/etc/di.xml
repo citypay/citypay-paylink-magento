@@ -22,6 +22,7 @@
     <virtualType name="CityPayPaylinkPaymentGatewayConfig" type="Magento\Payment\Gateway\Config\Config">
         <arguments>
             <argument name="methodCode" xsi:type="const">\Magento\CityPayPaylinkPaymentGateway\Model\Ui\ConfigProvider::CODE</argument>
+            <!--scopeConfig ,pathPattern -->
         </arguments>
     </virtualType>
 
@@ -45,7 +46,7 @@
                 <item name="pltoken" xsi:type="string">CityPayPaylinkPaymentGatewayPLTokenCommand</item>
                 <!--item name="authorize" xsi:type="string">CityPayPaylinkPaymentGatewayAuthorizeCommand</item>
                 <item name="capture" xsi:type="string">CityPayPaylinkPaymentGatewayCaptureCommand</item>
-                <item-- name="void" xsi:type="string">CityPayPaylinkPaymentGatewayVoidCommand</item-->
+                <item - - name="void" xsi:type="string">CityPayPaylinkPaymentGatewayVoidCommand</item-->
             </argument>
         </arguments>
     </virtualType>
