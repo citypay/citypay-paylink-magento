@@ -26,6 +26,7 @@ services:
       - ./files/etc:/var/www/html/magento/app/etc
       - ./src/SamplePaymentGateway:/var/www/html/magento/app/code/Magento/SamplePaymentGateway
       - ./src/sample-module-payment-gateway:/var/www/html/magento/app/code/Magento/sample-module-payment-gateway
+#      - ./src/sample-module-servicecontract-new:/var/www/html/magento/app/code/Magento/sample-module-servicecontract-new
       - ./src/CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
       - ./src/phptest:/var/www/html/phptest
       - ./src/25-xdebug.ini:/etc/php/7.2/cli/conf.d/25-xdebug.ini

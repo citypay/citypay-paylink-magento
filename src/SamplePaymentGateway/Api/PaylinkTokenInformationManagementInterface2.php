@@ -10,7 +10,7 @@ namespace CityPay\Paylink\Api;
  * @api
  * @since 100.0.2
  */
-interface PaylinkTokenInformationManagementInterface
+interface PaylinkTokenInformationManagementInterface2
 {
     /**
      * Set payment information and place order for a specified cart.

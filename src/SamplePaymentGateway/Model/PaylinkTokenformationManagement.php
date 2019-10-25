@@ -13,7 +13,7 @@ use Magento\Framework\Exception\CouldNotSaveException;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface
+class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2
 {
     /**
      * @var \Magento\Quote\Api\BillingAddressManagementInterface

@@ -25,7 +25,7 @@
     </route>
     <!-- My place order with payment information saving -->
     <route url="/V1/carts/mine/pltoken-information" method="POST">
-        <service class="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface" method="getPaylinkToken"/>
+        <service class="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" method="getPaylinkToken"/>
         <resources>
             <resource ref="self" />
         </resources>
