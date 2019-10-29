@@ -1,7 +1,7 @@
 version: '3'
 services:
   web:
-    image: citypay/magento2:latest
+    image: citypay/magento2:admin
     #phpdbg
     container_name: web
     restart: "no"
@@ -23,11 +23,13 @@ services:
 #      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\files\etc:/var/www/html/magento/app/etc
 #      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\src\SamplePaymentGateway:/var/www/html/magento/app/code/Magento/SamplePaymentGateway
 #      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\src\CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
+#      - ./files/generated:/var/www/html/magento/generated
+      -  magento2generated:/var/www/html/magento/generated
       - ./files/etc:/var/www/html/magento/app/etc
-      - ./src/SamplePaymentGateway:/var/www/html/magento/app/code/Magento/SamplePaymentGateway
-      - ./src/sample-module-payment-gateway:/var/www/html/magento/app/code/Magento/sample-module-payment-gateway
+      - ./src/Paylink:/var/www/html/magento/app/code/CityPay/Paylink
+#      - ./src/sample-module-payment-gateway:/var/www/html/magento/app/code/Magento/sample-module-payment-gateway
 #      - ./src/sample-module-servicecontract-new:/var/www/html/magento/app/code/Magento/sample-module-servicecontract-new
-      - ./src/CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
+#      - ./src/CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
       - ./src/phptest:/var/www/html/phptest
       - ./src/25-xdebug.ini:/etc/php/7.2/cli/conf.d/25-xdebug.ini
       - ./src/25-xdebug.ini:/etc/php/7.2/apache2/conf.d/25-xdebug.ini
@@ -56,3 +58,6 @@ services:
 networks:
   magentoworld:
     driver: bridge
+
+volumes:
+  magento2generated:
