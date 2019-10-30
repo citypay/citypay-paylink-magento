@@ -59,6 +59,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      * @param \Magento\Quote\Api\CartManagementInterface $cartManagement
      * @param PaymentDetailsFactory $paymentDetailsFactory
      * @param \Magento\Quote\Api\CartTotalRepositoryInterface $cartTotalsRepository
+     * @param \Psr\Log\LoggerInterface $logger
      * @codeCoverageIgnore
      */
     public function __construct(
@@ -77,7 +78,25 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $this->logger=$logger;
         $this->logger->debug('PaylinkTokenInformationManagement constructor');
     }
+/*
+    private function getArgs($quote)
+    {
+        [
+            'TXN_TYPE' => 'A',
+            'INVOICE' => $quote->getOrderIncrementId(),
+            'AMOUNT' => $order->getGrandTotalAmount(),
+            'CURRENCY' => $order->getCurrencyCode(),
+            'EMAIL' => $address->getEmail(),
+            'MERCHANT_KEY' => $this->config->getValue(
+                'merchant_gateway_key',
+                $order->getStoreId()
+            )
 
+
+
+        ];
+    }
+*/
     /**
      * @inheritdoc
      */
@@ -87,9 +106,16 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         \Magento\Quote\Api\Data\AddressInterface $billingAddress = null
     ) {
         $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken');
+
+        //subscribe to the event sales_order_payment_place_start
         $this->savePaymentInformation($cartId, $paymentMethod, $billingAddress);
         try {
-            $orderId = $this->cartManagement->placeOrder($cartId);
+            $orderId = $this->cartManagement->placeOrder($cartId,$paymentMethod);
+            /*
+            $quote = $this->quoteRepository->getActive($cartId);
+            $quote->reserveOrderId();
+            $args=getArgs($quote);
+            */
         } catch (\Magento\Framework\Exception\LocalizedException $e) {
             throw new CouldNotSaveException(
                 __($e->getMessage()),
@@ -102,6 +128,10 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                 $e
             );
         }
+
+        //unsubscribe to the event sales_order_payment_place_start
+        // need to return the redirect here
+
         return $orderId;
     }
 
