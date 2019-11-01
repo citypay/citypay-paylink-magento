@@ -11,9 +11,9 @@
         <observer name="sample_payment_gateway_data_assign" instance="CityPay\Paylink\Observer\DataAssignObserver" />
     </event>
     <event name="sales_order_payment_place_start">
-        <observer name="paylink_order_placement_observer" instance="CityPay\Paylink\Observer\OrderPlacementObserver" />
+        <observer name="paylink_order_placement_observer_start" instance="CityPay\Paylink\Observer\OrderPlacementStartObserver" />
     </event>
-    <!--event name="sales_order_payment_place_end">
-        <observer name="myObserverName" instance="MyCompany\MyModule\Observer\AnotherObserver" />
-    </event-->
+    <event name="sales_order_payment_place_end">
+        <observer name="paylink_order_placement_observer_end" instance="CityPay\Paylink\Observer\OrderPlacementEndObserver" />
+    </event>
 </config>

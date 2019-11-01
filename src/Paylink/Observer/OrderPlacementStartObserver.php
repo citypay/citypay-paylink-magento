@@ -8,7 +8,7 @@ namespace CityPay\Paylink\Observer;
 use Magento\Framework\Event\ObserverInterface;
 //use Magento\Payment\Observer\AbstractDataAssignObserver;
 
-class OrderPlacementObserver implements  ObserverInterface  //extends AbstractDataAssignObserver
+class OrderPlacementStartObserver implements  ObserverInterface  //extends AbstractDataAssignObserver
 {
     /**
      * @var \Psr\Log\LoggerInterface
@@ -24,7 +24,7 @@ class OrderPlacementObserver implements  ObserverInterface  //extends AbstractDa
         // Observer initialization code...
         // You can use dependency injection to get any class this observer may need.
         $this->logger=$logger;
-        $this->logger->debug('OrderPlacementObserver constructor');
+        $this->logger->debug('OrderPlacementStartObserver constructor');
     }
     /**
      * @param Observer $observer
@@ -32,8 +32,12 @@ class OrderPlacementObserver implements  ObserverInterface  //extends AbstractDa
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-        $this->logger->debug('OrderPlacementObserver execute');
-        /*
+        $this->logger->debug('OrderPlacementStartObserver execute');
+
+        $ev=$observer->getEvent();
+        $payment=$ev->getPayment();
+        //$this->logger->debug('OrderPlacementObserver event'+$ev);
+/*
         $method = $this->readMethodArgument($observer);
         $data = $this->readDataArgument($observer);
 
