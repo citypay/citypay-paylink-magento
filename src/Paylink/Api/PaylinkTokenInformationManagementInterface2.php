@@ -13,18 +13,14 @@ namespace CityPay\Paylink\Api;
 interface PaylinkTokenInformationManagementInterface2
 {
     /**
-     * Set payment information and place order for a specified cart.
+     * Set getPayLinkToken for specified orderId.
      *
-     * @param int $cartId
      * @param \Magento\Quote\Api\Data\PaymentInterface $paymentMethod
-     * @param \Magento\Quote\Api\Data\AddressInterface|null $billingAddress
      * @throws \Magento\Framework\Exception\CouldNotSaveException
-     * @return int Order ID.
+     * @return string $json.
      */
     public function getPaylinkToken(
-        $cartId,
-        \Magento\Quote\Api\Data\PaymentInterface $paymentMethod,
-        \Magento\Quote\Api\Data\AddressInterface $billingAddress = null
+        \Magento\Quote\Api\Data\PaymentInterface $paymentMethod
     );
 
     /**

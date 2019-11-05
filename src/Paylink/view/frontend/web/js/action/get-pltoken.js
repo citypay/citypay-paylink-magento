@@ -18,14 +18,12 @@ define([
         var serviceUrl, payload;
 
         payload = {
-            cartId: quote.getQuoteId(),
-            billingAddress: quote.billingAddress(),
             paymentMethod: paymentData
         };
 
         // MODIFIED URLs relative to place-order.js
         if (customer.isLoggedIn()) {
-            serviceUrl = urlBuilder.createUrl('/carts/mine/pltoken-information', {});
+            serviceUrl = urlBuilder.createUrl('/paylink/pltoken-information', {});
         } else {
             serviceUrl = urlBuilder.createUrl('/guest-carts/:quoteId/pltoken-information', {
                 quoteId: quote.getQuoteId()

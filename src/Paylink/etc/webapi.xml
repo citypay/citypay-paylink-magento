@@ -24,14 +24,11 @@
         </resources>
     </route>
     <!-- My place order with payment information saving -->
-    <route url="/V1/carts/mine/pltoken-information" method="POST">
+    <route url="/V1/paylink/pltoken-information" method="POST">
         <service class="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" method="getPaylinkToken"/>
         <resources>
             <resource ref="self" />
         </resources>
-        <data>
-            <parameter name="cartId" force="true">%cart_id%</parameter>
-        </data>
     </route>
 
 </routes>

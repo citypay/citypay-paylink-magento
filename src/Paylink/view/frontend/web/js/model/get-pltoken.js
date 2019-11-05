@@ -26,19 +26,9 @@ define(
                 }
             ).success(
                 function (response) {
-                    var clearData = {
-                        'selectedShippingAddress': null,
-                        'shippingAddressFromData': null,
-                        'newCustomerShippingAddress': null,
-                        'selectedShippingRate': null,
-                        'selectedPaymentMethod': null,
-                        'selectedBillingAddress': null,
-                        'billingAddressFromData': null,
-                        'newCustomerBillingAddress': null
-                    };
-
-                    if (response.responseType !== 'error') {
-                        customerData.set('checkout-data', clearData);
+                    let jresponse=JSON.parse(response);
+                    if (jresponse.result==1){
+                        window.location.replace(jresponse.url);
                     }
                 }
             ).always(

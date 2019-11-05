@@ -7,6 +7,8 @@
 namespace CityPay\Paylink\Model;
 
 use Magento\Framework\Exception\CouldNotSaveException;
+use mysql_xdevapi\Exception;
+use Magento\Payment\Gateway\Http\TransferInterface;
 
 /**
  * Payment information management
@@ -54,11 +56,22 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
     private $cartRepository;
 
     /**
+     * @var \Magento\Sales\Api\OrderRepositoryInterface $orderRepository
+     */
+    private $orderRepository;
+
+    /**
+     * @var \Magento\Payment\Gateway\Http\TransferBuilder $transferBuilder
+     */
+    private $transferBuilder;
+    /**
      * @param \Magento\Quote\Api\BillingAddressManagementInterface $billingAddressManagement
      * @param \Magento\Quote\Api\PaymentMethodManagementInterface $paymentMethodManagement
      * @param \Magento\Quote\Api\CartManagementInterface $cartManagement
      * @param PaymentDetailsFactory $paymentDetailsFactory
      * @param \Magento\Quote\Api\CartTotalRepositoryInterface $cartTotalsRepository
+     * @param \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,
+     * @param \Magento\Payment\Gateway\Http\TransferBuilder $transferBuilder,
      * @param \Psr\Log\LoggerInterface $logger
      * @codeCoverageIgnore
      */
@@ -68,6 +81,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         \Magento\Quote\Api\CartManagementInterface $cartManagement,
         \Magento\Checkout\Model\PaymentDetailsFactory $paymentDetailsFactory,
         \Magento\Quote\Api\CartTotalRepositoryInterface $cartTotalsRepository,
+        \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,
+        \Magento\Payment\Gateway\Http\TransferBuilder $transferBuilder,
         \Psr\Log\LoggerInterface $logger
     ) {
         $this->billingAddressManagement = $billingAddressManagement;
@@ -75,6 +90,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $this->cartManagement = $cartManagement;
         $this->paymentDetailsFactory = $paymentDetailsFactory;
         $this->cartTotalsRepository = $cartTotalsRepository;
+        $this->orderRepository=$orderRepository;
+        $this->transferBuilder=$transferBuilder;
         $this->logger=$logger;
         $this->logger->debug('PaylinkTokenInformationManagement constructor');
     }
@@ -101,21 +118,42 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      * @inheritdoc
      */
     public function getPaylinkToken(
-        $cartId,
-        \Magento\Quote\Api\Data\PaymentInterface $paymentMethod,
-        \Magento\Quote\Api\Data\AddressInterface $billingAddress = null
+        \Magento\Quote\Api\Data\PaymentInterface $paymentMethod
+
     ) {
         $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken');
 
+        try {
+
+            $payment = $paymentMethod;
+            $request = $this->buildRequestData($payment);
+            $transfer = $this->create($request);
+            $response = $this->placeRequest($transfer);
+            $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken '.$response);
+
+            return $response;
+            //return response
+            /*
+            $responseJson=json_decode($response);
+            if ($responseJson->result==1){
+
+            }
+            */
+        }
+        catch (Exception $ex){
+            $this->logger->error($ex->getMessage());
+        }
+
+        /*
         //subscribe to the event sales_order_payment_place_start
         $this->savePaymentInformation($cartId, $paymentMethod, $billingAddress);
         try {
             $orderId = $this->cartManagement->placeOrder($cartId,$paymentMethod);
-            /*
+            / *
             $quote = $this->quoteRepository->getActive($cartId);
             $quote->reserveOrderId();
             $args=getArgs($quote);
-            */
+            * /
         } catch (\Magento\Framework\Exception\LocalizedException $e) {
             throw new CouldNotSaveException(
                 __($e->getMessage()),
@@ -133,7 +171,77 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         // need to return the redirect here
 
         return $orderId;
+        */
     }
+
+    public function buildRequestData($payment)
+    {
+        /*
+        if (!isset($buildSubject['payment'])
+            || !$buildSubject['payment'] instanceof PaymentDataObjectInterface
+        ) {
+            throw new \InvalidArgumentException('Payment data object should be provided');
+        }
+        /  ** @var PaymentDataObjectInterface $payment * /
+        $payment = $buildSubject['payment'];
+        */
+        $ad=$payment->getAdditionalData();
+        $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken' . json_encode($ad));
+        $orderId=$ad['orderId'];
+        $order=$this->orderRepository->get($orderId);
+        //$order = $payment->getOrder();
+        $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken' . json_encode($order));
+        //$address = $order->getShippingAddress();
+        return [
+            'test'=>TRUE,
+            'identifier' => $order->getData('increment_id'),
+            'amount' => (int)(floatval($order->getData('grand_total'))*100), //'total_due'
+            'merchantId'=>64215680,
+            'licenceKey'=>'HKRW6442A025GEF0'
+
+            /*        'MERCHANT_KEY' => $this->config->getValue(
+                        'merchant_gateway_key',
+                        $order->getStoreId()
+                    )
+            */
+        ];
+    }
+    /**
+     * Builds gateway transfer object
+     *
+     * @param array $request
+     * @return TransferInterface
+     */
+    public function create(array $request)
+    {
+        return $this->transferBuilder
+            ->setBody($request)
+            ->setMethod('POST')
+            ->setHeaders(array('content-type:application/json') )
+            ->setUri('https://secure.citypay.com/paylink3/create')
+            ->build();
+    }
+
+    /**
+     * Places request to gateway. Returns result as ENV array
+     *
+     * @param TransferInterface $transferObject
+     * @return array
+     */
+    public function placeRequest(TransferInterface $transferObject)
+    {
+        $this->logger->debug(json_encode($transferObject));
+        $ch=curl_init($transferObject->getUri());
+        curl_setopt($ch,CURLOPT_POST,$transferObject->getMethod()=='POST');
+        curl_setopt($ch,CURLOPT_POSTFIELDS,json_encode($transferObject->getBody()));
+        curl_setopt($ch,CURLOPT_HTTPHEADER,$transferObject->getHeaders());
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response=curl_exec($ch);
+        curl_close($ch);
+        $this->logger->debug(json_encode($response));
+        return $response;
+    }
+
 
     /**
      * @inheritdoc
