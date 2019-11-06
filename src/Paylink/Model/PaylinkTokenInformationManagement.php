@@ -64,6 +64,12 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      * @var \Magento\Payment\Gateway\Http\TransferBuilder $transferBuilder
      */
     private $transferBuilder;
+
+    /**
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     */
+    private $scopeConfig;
+
     /**
      * @param \Magento\Quote\Api\BillingAddressManagementInterface $billingAddressManagement
      * @param \Magento\Quote\Api\PaymentMethodManagementInterface $paymentMethodManagement
@@ -72,6 +78,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      * @param \Magento\Quote\Api\CartTotalRepositoryInterface $cartTotalsRepository
      * @param \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,
      * @param \Magento\Payment\Gateway\Http\TransferBuilder $transferBuilder,
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param \Psr\Log\LoggerInterface $logger
      * @codeCoverageIgnore
      */
@@ -83,6 +90,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         \Magento\Quote\Api\CartTotalRepositoryInterface $cartTotalsRepository,
         \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,
         \Magento\Payment\Gateway\Http\TransferBuilder $transferBuilder,
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Psr\Log\LoggerInterface $logger
     ) {
         $this->billingAddressManagement = $billingAddressManagement;
@@ -92,6 +100,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $this->cartTotalsRepository = $cartTotalsRepository;
         $this->orderRepository=$orderRepository;
         $this->transferBuilder=$transferBuilder;
+        $this->scopeConfig=$scopeConfig;
         $this->logger=$logger;
         $this->logger->debug('PaylinkTokenInformationManagement constructor');
     }
@@ -173,7 +182,16 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         return $orderId;
         */
     }
+    /**
+     * @inheritdoc
+     */
+    public function processPaylinkPostback(
+        \CityPay\Paylink\Api\Data\PaylinkPostbackInterface $postbackInfo
 
+    ) {
+        $this->logger->debug('PaylinkTokenInformationManagement processPaylinkPostback '.json_encode($postbackInfo));
+
+    }
     public function buildRequestData($payment)
     {
         /*
@@ -191,6 +209,9 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $order=$this->orderRepository->get($orderId);
         //$order = $payment->getOrder();
         $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken' . json_encode($order));
+        $path = 'payment/sample_gateway/title';
+        $value = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        #$merchantId=$this->scopeConfig
         //$address = $order->getShippingAddress();
         return [
             'test'=>TRUE,

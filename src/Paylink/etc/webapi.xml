@@ -23,7 +23,8 @@
             <resource ref="anonymous" />
         </resources>
     </route>
-    <!-- My place order with payment information saving -->
+
+    <!-- request a token to pay for an order -->
     <route url="/V1/paylink/pltoken-information" method="POST">
         <service class="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" method="getPaylinkToken"/>
         <resources>
@@ -31,4 +32,11 @@
         </resources>
     </route>
 
+    <!-- Process postback from paylink -->
+    <route url="/V1/paylink/postback" method="POST">
+        <service class="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" method="processPaylinkPostback"/>
+        <resources>
+            <resource ref="self" />
+        </resources>
+    </route>
 </routes>

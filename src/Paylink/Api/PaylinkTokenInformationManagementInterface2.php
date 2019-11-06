@@ -13,7 +13,7 @@ namespace CityPay\Paylink\Api;
 interface PaylinkTokenInformationManagementInterface2
 {
     /**
-     * Set getPayLinkToken for specified orderId.
+     * Get PayLinkToken for specified orderId.
      *
      * @param \Magento\Quote\Api\Data\PaymentInterface $paymentMethod
      * @throws \Magento\Framework\Exception\CouldNotSaveException
@@ -21,6 +21,17 @@ interface PaylinkTokenInformationManagementInterface2
      */
     public function getPaylinkToken(
         \Magento\Quote\Api\Data\PaymentInterface $paymentMethod
+    );
+
+    /**
+     * process a PaylinkPostback for previous request.
+     *
+     * @param \CityPay\Paylink\Api\Data\PaylinkPostbackInterface $postbackInfo
+     * @throws \Magento\Framework\Exception\CouldNotSaveException
+     * @return string $json.
+     */
+    public function processPaylinkPostback(
+        \CityPay\Paylink\Api\Data\PaylinkPostbackInterface $postbackInfo
     );
 
     /**

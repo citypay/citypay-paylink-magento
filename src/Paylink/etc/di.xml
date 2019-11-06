@@ -10,6 +10,7 @@
 
     <preference for="Psr\Log\LoggerInterface" type="Magento\Framework\Logger\Monolog"/>
     <preference for="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" type="CityPay\Paylink\Model\PaylinkTokenInformationManagement" />
+    <preference for="\CityPay\Paylink\Api\Data\PaylinkPostbackInterface" type="\CityPay\Paylink\Model\PaylinkPostbackData" />
 
     <!-- Payment Method Facade configuration -->
     <virtualType name="SamplePaymentGatewayFacade" type="Magento\Payment\Model\Method\Adapter">
