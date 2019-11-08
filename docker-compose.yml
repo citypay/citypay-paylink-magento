@@ -14,9 +14,11 @@ services:
       - PHP_POST_MAX_SIZE=500M
       - PHP_UPLOAD_MAX_FILESIZE=1024M
       - PHP_EXTENSION_DEBUG=1
+      - NGROK_AUTHTOKEN=${ngrok_token}
     ports:
       - "80:80"
       - "9000:9000"
+      - "4040:4040"
     networks:
       - magentoworld
     volumes:
@@ -26,6 +28,8 @@ services:
 #      - ./files/generated:/var/www/html/magento/generated
       -  magento2generated:/var/www/html/magento/generated
       - ./files/etc:/var/www/html/magento/app/etc
+      - ./files/ngrok-stable-linux-amd64.zip:/usr/local/bin/ngrok-stable-linux-amd64.zip
+      - ./files/container-startup.sh:/usr/local/bin/container-startup.sh
       - ./src/Paylink:/var/www/html/magento/app/code/CityPay/Paylink
 #      - ./src/sample-module-payment-gateway:/var/www/html/magento/app/code/Magento/sample-module-payment-gateway
 #      - ./src/sample-module-servicecontract-new:/var/www/html/magento/app/code/Magento/sample-module-servicecontract-new
@@ -34,10 +38,11 @@ services:
       - ./src/25-xdebug.ini:/etc/php/7.2/cli/conf.d/25-xdebug.ini
       - ./src/25-xdebug.ini:/etc/php/7.2/apache2/conf.d/25-xdebug.ini
  #     - ./src/php.ini:/etc/php/7.2/cli/php2.ini
-
+#&& ./ngrok http 80 > /dev/null &
+    #&&  && /bin/bash
     links:
       - mysql
-    command:  /bin/bash
+    command:  /bin/bash -c "/usr/local/bin/container-startup.sh "
     stdin_open: true
     tty: true
   mysql:

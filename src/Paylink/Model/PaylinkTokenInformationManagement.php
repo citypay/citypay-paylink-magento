@@ -9,6 +9,7 @@ namespace CityPay\Paylink\Model;
 use Magento\Framework\Exception\CouldNotSaveException;
 use mysql_xdevapi\Exception;
 use Magento\Payment\Gateway\Http\TransferInterface;
+use Magento\Framework\Webapi\Rest\Request as RestRequest;
 
 /**
  * Payment information management
@@ -71,6 +72,12 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
     private $scopeConfig;
 
     /**
+     * @var \Magento\Framework\Webapi\Rest\Request
+     */
+    protected $_request;
+
+
+    /**
      * @param \Magento\Quote\Api\BillingAddressManagementInterface $billingAddressManagement
      * @param \Magento\Quote\Api\PaymentMethodManagementInterface $paymentMethodManagement
      * @param \Magento\Quote\Api\CartManagementInterface $cartManagement
@@ -80,6 +87,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      * @param \Magento\Payment\Gateway\Http\TransferBuilder $transferBuilder,
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param \Psr\Log\LoggerInterface $logger
+     * @param RestRequest $request
      * @codeCoverageIgnore
      */
     public function __construct(
@@ -91,7 +99,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,
         \Magento\Payment\Gateway\Http\TransferBuilder $transferBuilder,
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Psr\Log\LoggerInterface $logger
+        \Psr\Log\LoggerInterface $logger,
+        RestRequest $request
     ) {
         $this->billingAddressManagement = $billingAddressManagement;
         $this->paymentMethodManagement = $paymentMethodManagement;
@@ -102,6 +111,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $this->transferBuilder=$transferBuilder;
         $this->scopeConfig=$scopeConfig;
         $this->logger=$logger;
+        $this->_request=$request;
         $this->logger->debug('PaylinkTokenInformationManagement constructor');
     }
 /*
@@ -186,11 +196,14 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      * @inheritdoc
      */
     public function processPaylinkPostback(
-        \CityPay\Paylink\Api\Data\PaylinkPostbackInterface $postbackInfo
+  #      \CityPay\Paylink\Api\Data\PaylinkPostbackInterface $postbackInfo
 
     ) {
-        $this->logger->debug('PaylinkTokenInformationManagement processPaylinkPostback '.json_encode($postbackInfo));
-
+        $this->logger->debug('PaylinkTokenInformationManagement processPaylinkPostback ');
+        $this->logger->debug($this->_request->getContent());
+     #   $content=json_decode($this->_request->getContent());
+     #   $body=json_decode($this->_request->getBody());
+     #   $this->logger->debug(json(encode(body)) );
     }
     public function buildRequestData($payment)
     {
@@ -211,6 +224,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken' . json_encode($order));
         $path = 'payment/sample_gateway/title';
         $value = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        $this->logger->debug('getenv='.json_encode(getenv()));
+        $this->logger->debug('_ENV='.json_encode($_ENV));
         #$merchantId=$this->scopeConfig
         //$address = $order->getShippingAddress();
         return [
@@ -218,7 +233,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             'identifier' => $order->getData('increment_id'),
             'amount' => (int)(floatval($order->getData('grand_total'))*100), //'total_due'
             'merchantId'=>64215680,
-            'licenceKey'=>'HKRW6442A025GEF0'
+            'licenceKey'=>'HKRW6442A025GEF0',
+            'postback'=>getenv('NGROK_URL').'/magento/rest/V1/paylink/processAuthResponse'
 
             /*        'MERCHANT_KEY' => $this->config->getValue(
                         'merchant_gateway_key',
@@ -235,6 +251,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      */
     public function create(array $request)
     {
+        $this->logger->debug(json_encode($request));
         return $this->transferBuilder
             ->setBody($request)
             ->setMethod('POST')

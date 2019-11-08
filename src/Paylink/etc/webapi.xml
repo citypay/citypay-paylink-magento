@@ -33,10 +33,10 @@
     </route>
 
     <!-- Process postback from paylink -->
-    <route url="/V1/paylink/postback" method="POST">
+    <route url="/V1/paylink/processAuthResponse" method="POST">
         <service class="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" method="processPaylinkPostback"/>
         <resources>
-            <resource ref="self" />
+            <resource ref="anonymous" />
         </resources>
     </route>
 </routes>
