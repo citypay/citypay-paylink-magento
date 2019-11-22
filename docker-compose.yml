@@ -26,11 +26,12 @@ services:
 #      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\src\SamplePaymentGateway:/var/www/html/magento/app/code/Magento/SamplePaymentGateway
 #      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\src\CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
 #      - ./files/generated:/var/www/html/magento/generated
-      -  magento2generated:/var/www/html/magento/generated
+#      -  magento2generated:/var/www/html/magento/generated
       - ./files/etc:/var/www/html/magento/app/etc
       - ./files/ngrok-stable-linux-amd64.zip:/usr/local/bin/ngrok-stable-linux-amd64.zip
       - ./files/container-startup.sh:/usr/local/bin/container-startup.sh
       - ./src/Paylink:/var/www/html/magento/app/code/CityPay/Paylink
+      - ./src/HelloWorld:/var/www/html/magento/app/code/Mageplaza/HelloWorld
 #      - ./src/sample-module-payment-gateway:/var/www/html/magento/app/code/Magento/sample-module-payment-gateway
 #      - ./src/sample-module-servicecontract-new:/var/www/html/magento/app/code/Magento/sample-module-servicecontract-new
 #      - ./src/CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
@@ -40,26 +41,30 @@ services:
  #     - ./src/php.ini:/etc/php/7.2/cli/php2.ini
 #&& ./ngrok http 80 > /dev/null &
     #&&  && /bin/bash
-    links:
-      - mysql
+#    links:
+#      - mysql
     command:  /bin/bash -c "/usr/local/bin/container-startup.sh "
+#
     stdin_open: true
     tty: true
-  mysql:
-    image: mariadb:10
-    container_name: mysql
-    restart: "no"
-    ports:
-      - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=magento
-    networks:
-      - magentoworld
-    volumes:
-     # - C:\Users\marti\IdeaProjects\citypay-paylink-magento\data:/var/lib/mysql
-      - ./config:/etc/mysql/conf.d
-      - ./data:/var/lib/mysql
+
+#
+#  mysql:
+#    image: mariadb:10
+#    container_name: mysql
+#    restart: "no"
+#    ports:
+#      - "3306:3306"
+#    environment:
+#      - MYSQL_ROOT_PASSWORD=root
+#      - MYSQL_DATABASE=magento
+#    networks:
+#      - magentoworld
+#    volumes:
+#      #s- C:\Users\marti\IdeaProjects\citypay-paylink-magento\data:/var/lib/mysql
+#      - ./config:/etc/mysql/conf.d
+#      - ./data:/var/lib/mysql
+
 networks:
   magentoworld:
     driver: bridge

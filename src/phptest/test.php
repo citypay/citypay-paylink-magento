@@ -13,6 +13,8 @@ foreach($fruits as $fruit){
 }
 
 var_dump( array('CodeIgniter', 'php', 'phpMyAdmin', 'www.lucidar.me') );
+
+var_dump(getenv('NGROK_URL'), $_ENV['NGROK_URL'])
 ?>
 </body>
 </html>

@@ -7,7 +7,29 @@
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
     <system>
+        <!--tab id="citypay" translate="label" sortOrder="10">
+            <label>CityPay</label>
+        </tab-->
+        <!--section id="paylink" translate="label" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Paylink</label>
+            <tab>citypay</tab>
+            <group id="merchantconfig" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>CityPay Hosted Payment Page</label>
+                <field id="merchantid" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Merchant Id</label>
+                    <comment>Your CityPay merchant id.</comment>
+                </field>
+                <field id="licencekey" translate="label" type="text" sortOrder="26" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Licence Key</label>
+                    <comment>Your CityPay licence key.</comment>
+                </field>
+                <field id="postbackhost" translate="label" type="text" sortOrder="26" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>ngrok host</label>
+                </field>
+            </group>
+        </section-->
         <section id="payment">
+            <!--tab>citypay</tab-->
             <group id="sample_gateway" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Sample Gateway</label>
                 <field id="active" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
@@ -43,6 +65,29 @@
                        showInStore="0">
                     <label>Sort Order</label>
                     <frontend_class>validate-number</frontend_class>
+                </field>
+                <field id="merchantid" translate="label" type="text" sortOrder="24" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Merchant Id</label>
+                    <comment>Your CityPay merchant id.</comment>
+                </field>
+                <field id="licencekey" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Licence Key</label>
+                    <comment>Your CityPay licence key.</comment>
+                </field>
+                <field id="orderconfirmationemail" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Order Confirmation Email Address</label>
+                    <comment>The email field is used for the Merchant to be notified on completion of the transaction by CityPay Paylink</comment>
+                </field>
+                <field id="options" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>PayLink Options</label>
+                    <comment>See https://citypay.com/ps/api-documentation/paylinkv3/token-api-reference.html</comment>
+                </field>
+                <field id="postback_policy" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>PayLink Postback Policy</label>
+                    <comment>See https://citypay.com/ps/api-documentation/paylinkv3/token-api-reference.html</comment>
+                </field>
+                <field id="postbackhost" translate="label" type="text" sortOrder="26" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>ngrok host</label>
                 </field>
             </group>
         </section>

@@ -7,6 +7,13 @@
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
     <default>
+        <!--paylink>
+            <merchantconfig>
+                <merchantid></merchantid>
+                <licencekey></licencekey>
+                <postbackhost></postbackhost>
+            </merchantconfig>
+        </paylink-->
         <payment>
             <sample_gateway>
                 <debug>1</debug>
@@ -27,6 +34,11 @@
                 <paymentInfoKeys>FRAUD_MSG_LIST</paymentInfoKeys>
                 <privateInfoKeys>FRAUD_MSG_LIST</privateInfoKeys>
                 <merchantid></merchantid>
+                <licencekey></licencekey>
+                <postbackhost></postbackhost>
+                <orderconfirmationemail></orderconfirmationemail>
+                <options></options>
+                <postback_policy></postback_policy>
             </sample_gateway>
         </payment>
     </default>
