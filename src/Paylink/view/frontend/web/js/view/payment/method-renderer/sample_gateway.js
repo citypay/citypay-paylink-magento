@@ -47,7 +47,7 @@ define(
             },
             placeOrder:function (data, event) {
                 var self = this;
-                alert('my placeOrder');
+                //alert('my placeOrder');
 
                 if (event) {
                     event.preventDefault();
@@ -61,7 +61,7 @@ define(
                     this.getPlaceOrderDeferredObject()
                         .then(
                             function (value) {
-                                alert('orderId '+value)
+                                //alert('orderId '+value)
                                 //self.afterPlaceOrder();
                                 self.orderId=value;
                                 self.getPLTokenDeferredObject();

@@ -30,7 +30,7 @@ define([
             });
             payload.email = quote.guestEmail;
         }
-        alert ('call '+ serviceUrl);
+        //alert ('call '+ serviceUrl);
         return getplTokenService(serviceUrl, payload, messageContainer);
     };
 });
