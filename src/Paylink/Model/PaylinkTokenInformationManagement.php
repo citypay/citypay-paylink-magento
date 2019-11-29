@@ -332,6 +332,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             if ($this->validatePostbackDigest($postbackData)) {
                 $this->logger->debug('good PostbackDigest');
                 $incrementId = $postbackData->identifier;
+                $transno=$postbackData->transno;
                 $amountAuthd=$postbackData->amount/100.0;
                 $order=$this->getOrderFromIncId($incrementId);
                 $this->logger->debug('order='. json_encode($order));
@@ -343,8 +344,15 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                 #enhance Payment with data from postback
                 #eg $payment->setAdditionalInformation(Info::PAYPAL_CVV_2_MATCH, $response->getData('cvv2match'))
                 #$payment->setAdditionalData();
+                if ($postbackData->authorised) {
+                    $payment->registerAuthorizationNotification($amountAuthd);
+                }
+                else
+                {
+                    $order->cancel();
+                }
+                $order->addCommentToStatusHistory(sprintf('CityPay mode %s\nCityPay TransNo: %d\nCityPay authenticationResult %s\nCityPay AVSResponse %s\nCityPay CSCResponse %s\nCityPay errorcode %s\nCityPay result %s\nCityPay status %s',$postbackData->mode,$transno,$postbackData->authenticationResult , $postbackData->AVSResponse,$postbackData->CSCResponse, $postbackData->errorcode,$postbackData->result,$postbackData->status));
 
-                $payment->registerAuthorizationNotification($amountAuthd);
                 $order->save();
             }
             else
@@ -384,6 +392,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $orderId=$ad['orderId'];
         $order=$this->orderRepository->get($orderId);
         #$this->getOrderFromIncId($order->getIncrementId()); // test function here
+
+        $billingAddress=$order->getBillingAddress();
 
         //$order = $payment->getOrder();
         $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken' . json_encode($order));
@@ -434,11 +444,27 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
         $this->logger->debug($this->urlBuilder->getUrl('checkout/onepage/success/'));
         $configData= [
-        'postback'=>$postbackHost.'/magento/rest/'.$storeCode.'/V1/paylink/processAuthResponse',
-        'redirect_success'=>'http://localhost/magento/checkout/onepage/success/'
+            'postback'=>$postbackHost.'/magento/rest/'.$storeCode.'/V1/paylink/processAuthResponse',
+            'redirect_success'=>'http://localhost/magento/checkout/onepage/success/',
+            'redirect_failure'=>'http://localhost/magento/checkout/onepage/failure/'
         #    ,'redirect_success'=>''
         #    ,'redirect_failure'=>''
         ];
+        $streets=$billingAddress->getStreet();#returns an array
+        $cardholder=[
+            'email'=>$order->getCustomerEmail(),
+            'firstname'=>$billingAddress->getFirstname(),
+            'lastname'=>$billingAddress->getLastname(),
+            'address'=>[
+                'address1'=>count($streets)>0?$streets[0]:null,
+                'address2'=>count($streets)>1?$streets[1]:null,
+
+                'area'=>$billingAddress->getCity().($billingAddress->getRegion()!=null?','.$billingAddress->getRegion():''),
+                'postcode'=>$billingAddress->getPostcode(),
+                'country'=>$billingAddress->getCountryId()
+            ]
+        ];
+
         if ($postback_policy!=null){
             $configData['postback_policy']=$postback_policy;
         }
@@ -460,7 +486,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             $requestData['options']=$optionsarray;
         }
         $requestData['config']=$configData;
-
+        $requestData['cardholder']=$cardholder;
         $order->setStatus(Order::STATE_PENDING_PAYMENT);
         #save the order.....
         $order->save();
