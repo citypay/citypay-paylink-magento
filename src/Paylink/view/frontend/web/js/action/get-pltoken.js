@@ -25,9 +25,7 @@ define([
         if (customer.isLoggedIn()) {
             serviceUrl = urlBuilder.createUrl('/paylink/pltoken-information', {});
         } else {
-            serviceUrl = urlBuilder.createUrl('/guest-carts/:quoteId/pltoken-information', {
-                quoteId: quote.getQuoteId()
-            });
+            serviceUrl = urlBuilder.createUrl('/guest-carts/pltoken-information', {});
             payload.email = quote.guestEmail;
         }
         //alert ('call '+ serviceUrl);
