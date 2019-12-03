@@ -33,7 +33,7 @@ define(
             },
 
             getCode: function() {
-                return 'sample_gateway';
+                return 'citypay_gateway';
             },
 
             getData: function() {
@@ -118,7 +118,7 @@ define(
                 );
             },
             getTransactionResults: function() {
-                return _.map(window.checkoutConfig.payment.sample_gateway.transactionResults, function(value, key) {
+                return _.map(window.checkoutConfig.payment.citypay_gateway.transactionResults, function(value, key) {
                     return {
                         'value': key,
                         'transaction_result': value

@@ -15,10 +15,10 @@
             </merchantconfig>
         </paylink-->
         <payment>
-            <sample_gateway>
+            <citypay_gateway>
                 <debug>1</debug>
                 <active>1</active>
-                <model>SamplePaymentGatewayFacade</model>
+                <model>CityPayPaymentGatewayFacade</model>
                 <merchant_gateway_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
                 <order_status>pending_payment</order_status>
                 <payment_action></payment_action>
@@ -39,7 +39,7 @@
                 <orderconfirmationemail></orderconfirmationemail>
                 <options></options>
                 <postback_policy></postback_policy>
-            </sample_gateway>
+            </citypay_gateway>
         </payment>
     </default>
 </config>

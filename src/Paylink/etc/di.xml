@@ -17,20 +17,20 @@
     <!--type name="Magento\Config\Model\Config\TypePool">
         <arguments>
             <argument name="sensitive" xsi:type="array">
-                <item name="payment/sample_gateway/postbackhost" xsi:type="string">0</item>
-                <item name="payment/sample_gateway/merchantid" xsi:type="string">0</item>
-                <item name="payment/sample_gateway/licencekey" xsi:type="string">0</item>
+                <item name="payment/citypay_gateway/postbackhost" xsi:type="string">0</item>
+                <item name="payment/citypay_gateway/merchantid" xsi:type="string">0</item>
+                <item name="payment/citypay_gateway/licencekey" xsi:type="string">0</item>
             </argument>
             <argument name="environment" xsi:type="array">
-                <item name="payment/sample_gateway/postbackhost" xsi:type="string">0</item>
-                <item name="payment/sample_gateway/merchantid" xsi:type="string">0</item>
-                <item name="payment/sample_gateway/licencekey" xsi:type="string">0</item>
+                <item name="payment/citypay_gateway/postbackhost" xsi:type="string">0</item>
+                <item name="payment/citypay_gateway/merchantid" xsi:type="string">0</item>
+                <item name="payment/citypay_gateway/licencekey" xsi:type="string">0</item>
             </argument>
         </arguments>
     </type-->
 
     <!-- Payment Method Facade configuration -->
-    <virtualType name="SamplePaymentGatewayFacade" type="Magento\Payment\Model\Method\Adapter">
+    <virtualType name="CityPayPaymentGatewayFacade" type="Magento\Payment\Model\Method\Adapter">
         <arguments>
             <argument name="code" xsi:type="const">\CityPay\Paylink\Model\Ui\ConfigProvider::CODE</argument>
             <argument name="formBlockType" xsi:type="string">Magento\Payment\Block\Form</argument>

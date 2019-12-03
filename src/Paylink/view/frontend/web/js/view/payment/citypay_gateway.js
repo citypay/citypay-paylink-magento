@@ -16,8 +16,8 @@ define(
         'use strict';
         rendererList.push(
             {
-                type: 'sample_gateway',
-                component: 'CityPay_Paylink/js/view/payment/method-renderer/sample_gateway'
+                type: 'citypay_gateway',
+                component: 'CityPay_Paylink/js/view/payment/method-renderer/citypay_gateway'
             }
         );
         /** Add view logic here if needed */

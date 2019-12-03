@@ -275,7 +275,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $postbackString=$this->_request->getContent();
         $postbackData=json_decode($postbackString);
         try {
-            $path = 'payment/sample_gateway/licencekey';
+            $path = 'payment/citypay_gateway/licencekey';
             $this->licence_key = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
             $this->logger->debug($this->licence_key);
             if ($this->validatePostbackDigest($postbackData)) {
@@ -346,23 +346,23 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
         //$order = $payment->getOrder();
         $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken' . json_encode($order));
-        $path = 'payment/sample_gateway/postbackhost';
+        $path = 'payment/citypay_gateway/postbackhost';
         $postbackHost = $this->scopeConfig->getValue($path);
         $this->logger->debug('postbackhost='.$postbackHost);
 
-        $path = 'payment/sample_gateway/merchantid';
+        $path = 'payment/citypay_gateway/merchantid';
         $merchantid = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $this->logger->debug('merchantid='.$merchantid);
 
-        $path = 'payment/sample_gateway/licencekey';
+        $path = 'payment/citypay_gateway/licencekey';
         $licencekey = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $this->logger->debug('licencekey='.$licencekey);
 
-        $path = 'payment/sample_gateway/orderconfirmationemail';
+        $path = 'payment/citypay_gateway/orderconfirmationemail';
         $orderconfirmationemail = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $this->logger->debug('orderconfirmationemail='.$orderconfirmationemail);
 
-        $path = 'payment/sample_gateway/options';
+        $path = 'payment/citypay_gateway/options';
         $options = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $this->logger->debug('options='.$options);
         if ($options!=null) {
@@ -372,7 +372,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         else
             $optionsarray=null;
 
-        $path = 'payment/sample_gateway/postback_policy';
+        $path = 'payment/citypay_gateway/postback_policy';
         $postback_policy = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $this->logger->debug('postback_policy='.$postback_policy);
 
