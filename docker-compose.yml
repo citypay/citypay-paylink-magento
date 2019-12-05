@@ -1,5 +1,13 @@
 version: '3'
 services:
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: always
+    ports:
+      - 1025:1025
+      - 8025:8025
+    networks:
+      - magentoworld
   web:
     image: citypay/magento2:admin
     #phpdbg
@@ -49,6 +57,7 @@ services:
       - ./src/phptest:/var/www/html/phptest
       - ./src/25-xdebug.ini:/etc/php/7.2/cli/conf.d/25-xdebug.ini
       - ./src/25-xdebug.ini:/etc/php/7.2/apache2/conf.d/25-xdebug.ini
+      - ./src/cronjobcaller.php:/var/www/html/magento/pub/cronjobcaller.php
  #     - ./src/php.ini:/etc/php/7.2/cli/php2.ini
 #&& ./ngrok http 80 > /dev/null &
     #&&  && /bin/bash
@@ -79,6 +88,8 @@ services:
 networks:
   magentoworld:
     driver: bridge
+
+
 
 volumes:
   magento2generated:

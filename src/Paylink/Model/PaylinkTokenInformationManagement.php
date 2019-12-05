@@ -295,6 +295,9 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                 #$payment->setAdditionalData();
                 if ($postbackData->authorised) {
                     $payment->registerAuthorizationNotification($amountAuthd);
+                    # open for settlement, assigned to a batch or settled
+                    if ($postbackData->status=='O' || $postbackData->status=='A' || $postbackData->status=='S')
+                        $payment->registerCaptureNotification($amountAuthd);
                 }
                 else
                 {

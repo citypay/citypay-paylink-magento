@@ -4,6 +4,7 @@ FROM citypay/magento2:latest
 RUN  apt-get install -yq --no-install-recommends \
         php-xdebug\
         sudo\
-        jq
+        jq\
+        ssmtp
 
 ENV NGROK_TOKEN=$A_NGROK_TOKEN

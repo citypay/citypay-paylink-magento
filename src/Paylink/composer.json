@@ -1,6 +1,6 @@
 {
     "name": "citypay/module-paylink",
-    "description": "Demonstrates integration with payment gatewayx",
+    "description": "CityPay Paylink hosted payment page",
     "require": {
         "php": "~5.5.0|~5.6.0|~7.0.0",
         "magento/module-sales": "100.0.*",
