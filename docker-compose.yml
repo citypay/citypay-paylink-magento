@@ -38,19 +38,22 @@ services:
       - ./files/etc:/var/www/html/magento/app/etc
       - ./files/ngrok-stable-linux-amd64.zip:/usr/local/bin/ngrok-stable-linux-amd64.zip
       - ./files/container-startup.sh:/usr/local/bin/container-startup.sh
-      - ./src/Paylink:/var/www/html/magento/app/code/CityPay/Paylink
+#      - ./src/Paylink:/var/www/html/magento/app/code/CityPay/Paylink
+      - ./rootcomposer2.json:/var/www/html/magento/composer.json
+      - ./src/Paylink.zip:/usr/local/bin/Paylink.zip
       - ./src/HelloWorld:/var/www/html/magento/app/code/Mageplaza/HelloWorld
-      - ./src/liqpay-magento2-master/admin:/var/www/html/magento/app/code/Pronko\LiqPayAdmin
-      - ./src/liqpay-magento2-master/api:/var/www/html/magento/app/code/Pronko\LiqPayApi
-      - ./src/liqpay-magento2-master/card-admin:/var/www/html/magento/app/code/Pronko\LiqPayCardAdmin
-      - ./src/liqpay-magento2-master/card-gateway:/var/www/html/magento/app/code/Pronko\LiqPayCardGateway
-      - ./src/liqpay-magento2-master/checkout:/var/www/html/magento/app/code/Pronko\LiqPayCheckout
-      - ./src/liqpay-magento2-master/customer:/var/www/html/magento/app/code/Pronko\LiqPayCustomer
-      - ./src/liqpay-magento2-master/gateway:/var/www/html/magento/app/code/Pronko\LiqPayGateway
-      - ./src/liqpay-magento2-master/redirect:/var/www/html/magento/app/code/Pronko\LiqPayRedirect
-      - ./src/liqpay-magento2-master/sdk:/var/www/html/magento/app/code/Pronko\LiqPaySdk
-      - ./src/liqpay-magento2-master/test:/var/www/html/magento/app/code/Pronko\LiqPayTest
-      - ./src/liqpay-magento2-master/widget:/var/www/html/magento/app/code/Pronko\LiqPayWidget
+#      - ./src/liqpay-magento2-master/admin:/var/www/html/magento/app/code/Pronko\LiqPayAdmin
+#      - ./src/liqpay-magento2-master/api:/var/www/html/magento/app/code/Pronko\LiqPayApi
+#      - ./src/liqpay-magento2-master/card-admin:/var/www/html/magento/app/code/Pronko\LiqPayCardAdmin
+#      - ./src/liqpay-magento2-master/card-gateway:/var/www/html/magento/app/code/Pronko\LiqPayCardGateway
+#      - ./src/liqpay-magento2-master/checkout:/var/www/html/magento/app/code/Pronko\LiqPayCheckout
+#      - ./src/liqpay-magento2-master/customer:/var/www/html/magento/app/code/Pronko\LiqPayCustomer
+#      - ./src/liqpay-magento2-master/gateway:/var/www/html/magento/app/code/Pronko\LiqPayGateway
+#      - ./src/liqpay-magento2-master/redirect:/var/www/html/magento/app/code/Pronko\LiqPayRedirect
+#      - ./src/liqpay-magento2-master/sdk:/var/www/html/magento/app/code/Pronko\LiqPaySdk
+#      - ./src/liqpay-magento2-master/test:/var/www/html/magento/app/code/Pronko\LiqPayTest
+
+#      - ./src/liqpay-magento2-master/widget:/var/www/html/magento/app/code/Pronko\LiqPayWidget
 #      - ./src/sample-module-payment-gateway:/var/www/html/magento/app/code/Magento/sample-module-payment-gateway
 #      - ./src/sample-module-servicecontract-new:/var/www/html/magento/app/code/Magento/sample-module-servicecontract-new
 #      - ./src/CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink

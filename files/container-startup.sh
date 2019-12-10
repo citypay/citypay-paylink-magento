@@ -20,11 +20,16 @@ echo 'ngrokurl=' $NGROK_URL
 export NGROK_URL=$NGROK_URL
 
 cd /var/www/html/magento
-chown -R www-data:www-data app/code/CityPay
+#cp composer2.json composer.json
+#chown -R www-data:www-data app/code/CityPay
 chown -R www-data:www-data app/code/Mageplaza
 
 service apache2 start
+composer update
+composer require -vvv citypay/module-paylink=100.0.3
+
 sudo -g www-data php bin/magento config:set payment/citypay_gateway/postbackhost $NGROK_URL
 sudo -g www-data php bin/magento  cache:clean config
+
 
 /bin/bash
