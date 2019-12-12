@@ -2,3 +2,6 @@
 /.idea/
 /.env
 /citypay-paylink-magento.iml
+/data/
+/files/
+/phptest/
