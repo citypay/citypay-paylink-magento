@@ -379,6 +379,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $postback_policy = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $this->logger->debug('postback_policy='.$postback_policy);
 
+
         $passThroughHeaders=[];
         $cookieList='';
         # see https://docs.magento.com/m2/ce/user_guide/stores/cookie-reference.html
@@ -395,12 +396,13 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $storeCode=$this->_storeManager->getStore($storeId)->getCode();
 
         $this->logger->debug($this->urlBuilder->getUrl('checkout/onepage/success/'));
+
         $configData= [
-            'postback'=>$postbackHost.'/magento/rest/'.$storeCode.'/V1/paylink/processAuthResponse',
-            'redirect_success'=>'http://localhost/magento/checkout/onepage/success/',
-            'redirect_failure'=>'http://localhost/magento/checkout/onepage/failure/'
-        #    ,'redirect_success'=>''
-        #    ,'redirect_failure'=>''
+            'postback'=>$postbackHost.'/rest/'.$storeCode.'/V1/paylink/processAuthResponse',
+            'redirect_success'=>$this->urlBuilder->getUrl('checkout/onepage/success/'),
+            'redirect_failure'=>$this->urlBuilder->getUrl('checkout/onepage/failure/')
+            #    ,'redirect_success'=>''
+            #    ,'redirect_failure'=>''
         ];
         $streets=$billingAddress->getStreet();#returns an array
         $cardholder=[
