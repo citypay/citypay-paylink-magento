@@ -1,8 +1,8 @@
 # Created by .ignore support plugin (hsz.mobi)
-/.idea/
+.idea/
 
 /citypay-paylink-magento.iml
 /rootcomposer2.json
 /ZipPackage-README.md
-/.gitignore
 .DS_Store
+
