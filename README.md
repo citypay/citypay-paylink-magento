@@ -1,4 +1,5 @@
-![image](https://citypay.com/static/img/logo-x500.png)
+<!--![image](https://citypay.com/static/img/logo-x500.png)-->
+<img src="https://citypay.com/static/img/logo-x500.png" height="75"/>
      
 # Magento 2 Payment Module
 
@@ -9,3 +10,5 @@ To make payments in your Magento 2 webshop, download the CityPay Paylink Magento
 frequently used national and international online payment methods and solutions for worldwide internet commerce.
 
 ## Installing CityPay Paylink payment module
+<!--![image](docs/plugin%20config.png)-->
+<img src="docs/admin_order_info.png" width="700"/>

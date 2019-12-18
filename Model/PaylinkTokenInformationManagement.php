@@ -125,25 +125,25 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $this->urlBuilder=$urlBuilder;
         $this->logger->debug('PaylinkTokenInformationManagement constructor');
     }
-/*
-    private function getArgs($quote)
-    {
-        [
-            'TXN_TYPE' => 'A',
-            'INVOICE' => $quote->getOrderIncrementId(),
-            'AMOUNT' => $order->getGrandTotalAmount(),
-            'CURRENCY' => $order->getCurrencyCode(),
-            'EMAIL' => $address->getEmail(),
-            'MERCHANT_KEY' => $this->config->getValue(
-                'merchant_gateway_key',
-                $order->getStoreId()
-            )
+    /*
+        private function getArgs($quote)
+        {
+            [
+                'TXN_TYPE' => 'A',
+                'INVOICE' => $quote->getOrderIncrementId(),
+                'AMOUNT' => $order->getGrandTotalAmount(),
+                'CURRENCY' => $order->getCurrencyCode(),
+                'EMAIL' => $address->getEmail(),
+                'MERCHANT_KEY' => $this->config->getValue(
+                    'merchant_gateway_key',
+                    $order->getStoreId()
+                )
 
 
 
-        ];
-    }
-*/
+            ];
+        }
+    */
     /**
      * @inheritdoc
      */
@@ -268,7 +268,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      * @inheritdoc
      */
     public function processPaylinkPostback(
-  #      \CityPay\Paylink\Api\Data\PaylinkPostbackInterface $postbackInfo
+        #      \CityPay\Paylink\Api\Data\PaylinkPostbackInterface $postbackInfo
 
     ) {
         $this->logger->debug('PaylinkTokenInformationManagement processPaylinkPostback');
@@ -319,9 +319,9 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             $this->logger->debug($msg );
             $this->logger->debug($ex->getTraceAsString());
         }
-     #   $content=json_decode($this->_request->getContent());
-     #   $body=json_decode($this->_request->getBody());
-     #   $this->logger->debug(json(encode(body)) );
+        #   $content=json_decode($this->_request->getContent());
+        #   $body=json_decode($this->_request->getBody());
+        #   $this->logger->debug(json(encode(body)) );
     }
 
     private function trimString(&$item,$key)
@@ -379,6 +379,9 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $postback_policy = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $this->logger->debug('postback_policy='.$postback_policy);
 
+        $path = 'payment/citypay_gateway/testmode';
+        $testmode = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        $this->logger->debug('testmode='.$testmode);
 
         $passThroughHeaders=[];
         $cookieList='';
@@ -426,7 +429,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             $configData['passThroughHeaders']=$passThroughHeaders;
 
         $requestData= [
-            'test'=>TRUE,
+            'test'=>$testmode,
             'identifier' => $order->getData('increment_id'),
             'amount' => (int)(floatval($order->getData('grand_total'))*100), //'total_due'
             'merchantId'=>(int)$merchantid,
@@ -435,7 +438,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         ];
         if ($orderconfirmationemail) {
             $requestData['email']=$orderconfirmationemail;
-         }
+        }
         if ($optionsarray!=null) {
             $requestData['options']=$optionsarray;
         }
