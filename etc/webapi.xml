@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+
+    <!-- Guest request a token to pay for an order (get order from checkOut session-->
+    <route url="/V1/guest-carts/pltoken-information" method="POST">
+        <service class="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" method="getPaylinkToken"/>
+        <resources>
+            <resource ref="anonymous" />
+        </resources>
+    </route>
+
+
+    <!-- request a token to pay for an order -->
+    <route url="/V1/paylink/pltoken-information" method="POST">
+        <service class="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" method="getPaylinkToken"/>
+        <resources>
+            <resource ref="self" />
+        </resources>
+    </route>
+
+    <!-- Process postback from paylink -->
+    <route url="/V1/paylink/processAuthResponse" method="POST">
+        <service class="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" method="processPaylinkPostback"/>
+        <resources>
+            <resource ref="anonymous" />
+        </resources>
+    </route>
+</routes>
