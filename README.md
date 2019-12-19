@@ -10,9 +10,9 @@ frequently used national and international online payment methods and solutions 
 
 ## Installing CityPay Paylink Payment Module
 
-0. Download this project as a .zip file
-0. Change to directory where magento is installed (i.e cd /var/www/html/)
-0. Expand your magento2 composer.json file (i.e /var/www/html/composer.json) with the "repositories" block bellow:
+1. Download this project as a .zip file
+1. Change to directory where magento is installed (i.e cd /var/www/html/)
+1. Expand your magento2 composer.json file (i.e /var/www/html/composer.json) with the "repositories" block bellow:
     ```json
     "repositories": {
      "0":   {
@@ -52,9 +52,9 @@ frequently used national and international online payment methods and solutions 
 		}
     },
     ```
-0. Run composer update
-0. Run composer require -vvv citypay/module-paylink=100.0.3
-0. Ensure that the plugin is enabled (i.e using Magento CLI -> magento module:enable CityPay_Paylink)
+1. Run composer update
+1. Run composer require -vvv citypay/module-paylink=100.0.3
+1. Ensure that the plugin is enabled (i.e using Magento CLI -> magento module:enable CityPay_Paylink)
 
 ## User Documentation
 
