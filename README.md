@@ -63,7 +63,8 @@ To configure the module, log in to your administrator backend.
 
 1. Go to **Stores** -> **Configuration** -> **Sales** -> **Payment methods** and find and click on **CityPay Paylink Gateway** Settings under **OTHER PAYMENT METHODS**
 
-<img src="docs/plugin_config.png" width="800"/>
+![plugin_config](https://user-images.githubusercontent.com/28923983/71171425-aab87000-2255-11ea-9d85-d8550f4841c3.png)
+
 
 ### Merchant required settings
 To be able to use the CityPay Paylink Plugin the merchant must configure their following **Required** fields:
@@ -79,33 +80,33 @@ To be able to use the CityPay Paylink Plugin the merchant must configure their f
 
 ### Checkout
 - Customer will be presented with the option to pay via CityPay Hosted Payment Form
-<img src="docs/checkout.png" width="800"/>
+![checkout](https://user-images.githubusercontent.com/28923983/71171419-aa1fd980-2255-11ea-8818-dfe2a4b9f303.png)
 
 ___
-<img src="docs/place_order.png" width="800"/>
+<img width="908" alt="place_order" src="https://user-images.githubusercontent.com/28923983/71171423-aab87000-2255-11ea-995a-0e5dff49a19b.png">
 
 ___
 ### Paylink Payment Form
 
 - Customer will be presented with the CityPay Paylink Form
-<img src="docs/paylink_form.png" width="400"/>
+<img width="550" alt="paylink_form" src="https://user-images.githubusercontent.com/28923983/71171422-aab87000-2255-11ea-9871-666fd7b131f3.png">
 
 ___
 
 ### Post Processing
 - Customer will be redirected back to Magento Store once they hit the *Return to Store* button
-<img src="docs/transaction_aproved.png" width="400"/>
+<img width="618" alt="transaction_aproved" src="https://user-images.githubusercontent.com/28923983/71171427-ab510680-2255-11ea-84cb-42580326f569.png">
 
 ___
-<img src="docs/success_page.png" width="800"/>
+<img width="1679" alt="success_page" src="https://user-images.githubusercontent.com/28923983/71171426-aab87000-2255-11ea-94b9-89f1d6a11eb9.png">
 
 ___
 - Customers order summary will mention order status as *Processing*
-<img src="docs/customer_orders.png" width="800"/>
+![customer_orders](https://user-images.githubusercontent.com/28923983/71171421-aab87000-2255-11ea-8a40-051f97758ad0.png)
 
 ___
 - Order details page will display CityPay Payment as the Payment Method
-<img src="docs/customer_order_details.png" width="800"/>
+![customer_order_details](https://user-images.githubusercontent.com/28923983/71171420-aa1fd980-2255-11ea-95df-15bc35d9cc35.png)
 
 ___
 
@@ -115,8 +116,8 @@ ___
 
 - Order will be set to Processing on the Merchant Backend Console and Merchant 
 will have the ability to view that the payment was made by the CityPay Payment Module.
-<img src="docs/admin_orders.png" width="800"/>
+![admin_orders](https://user-images.githubusercontent.com/28923983/71171418-aa1fd980-2255-11ea-9406-048600dd39ff.png)
 
 ___
 
-<img src="docs/admin_order_info.png" width="800"/>
+![admin_order_info](https://user-images.githubusercontent.com/28923983/71171416-aa1fd980-2255-11ea-83ec-4f2e64d8eb05.png)
