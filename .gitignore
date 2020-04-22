@@ -1,6 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
 /.idea/
 /.env
+/etc
 /citypay-paylink-magento.iml
 /data/
 /files/
