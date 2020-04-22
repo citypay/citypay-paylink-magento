@@ -1,6 +1,7 @@
 version: '3'
 services:
   mailhog:
+    container_name: citypay-magento-mail
     image: mailhog/mailhog:latest
     restart: always
     ports:
@@ -9,90 +10,51 @@ services:
     networks:
       - magentoworld
   web:
-    image: citypay/magento2:admin
-    #phpdbg
-    container_name: web
+    image: citypay/magento2:latest
+    container_name: citypay-magento-web
     restart: "no"
+    env_file: ".env"
     environment:
       - WEB_DOCUMENT_ROOT=/var/www/html/magento
-      - PHP_DATE_TIMEZONE=EST
+      - PHP_DATE_TIMEZONE=GMT
       - PHP_DISPLAY_ERRORS=1
       - PHP_MEMORY_LIMIT=2048M
       - PHP_MAX_EXECUTION_TIME=300
       - PHP_POST_MAX_SIZE=500M
       - PHP_UPLOAD_MAX_FILESIZE=1024M
-      - PHP_EXTENSION_DEBUG=1
-      - NGROK_AUTHTOKEN=${ngrok_token}
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+      - MAGENTO_REPO_USERNAME=${MAGENTO_REPO_USERNAME}
+      - MAGENTO_REPO_PASSWORD=${MAGENTO_REPO_PASSWORD}
     ports:
       - "80:80"
-      - "9000:9000"
-      - "4040:4040"
     networks:
       - magentoworld
     volumes:
-#      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\files\etc:/var/www/html/magento/app/etc
-#      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\src\SamplePaymentGateway:/var/www/html/magento/app/code/Magento/SamplePaymentGateway
-#      - C:\Users\marti\IdeaProjects\citypay-paylink-magento\src\CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
-#      - ./files/generated:/var/www/html/magento/generated
-#      -  magento2generated:/var/www/html/magento/generated
-      - ./files/etc:/var/www/html/magento/app/etc
-      - ./files/ngrok-stable-linux-amd64.zip:/usr/local/bin/ngrok-stable-linux-amd64.zip
-      - ./files/container-startup.sh:/usr/local/bin/container-startup.sh
+      - ./etc:/var/www/html/magento/app/etc
 #      - ./src/Paylink:/var/www/html/magento/app/code/CityPay/Paylink
-      - ./rootcomposer2.json:/var/www/html/magento/composer.json
-      - ./src/Paylink.zip:/usr/local/bin/Paylink.zip
-      - ./src/HelloWorld:/var/www/html/magento/app/code/Mageplaza/HelloWorld
-#      - ./src/liqpay-magento2-master/admin:/var/www/html/magento/app/code/Pronko\LiqPayAdmin
-#      - ./src/liqpay-magento2-master/api:/var/www/html/magento/app/code/Pronko\LiqPayApi
-#      - ./src/liqpay-magento2-master/card-admin:/var/www/html/magento/app/code/Pronko\LiqPayCardAdmin
-#      - ./src/liqpay-magento2-master/card-gateway:/var/www/html/magento/app/code/Pronko\LiqPayCardGateway
-#      - ./src/liqpay-magento2-master/checkout:/var/www/html/magento/app/code/Pronko\LiqPayCheckout
-#      - ./src/liqpay-magento2-master/customer:/var/www/html/magento/app/code/Pronko\LiqPayCustomer
-#      - ./src/liqpay-magento2-master/gateway:/var/www/html/magento/app/code/Pronko\LiqPayGateway
-#      - ./src/liqpay-magento2-master/redirect:/var/www/html/magento/app/code/Pronko\LiqPayRedirect
-#      - ./src/liqpay-magento2-master/sdk:/var/www/html/magento/app/code/Pronko\LiqPaySdk
-#      - ./src/liqpay-magento2-master/test:/var/www/html/magento/app/code/Pronko\LiqPayTest
-
-#      - ./src/liqpay-magento2-master/widget:/var/www/html/magento/app/code/Pronko\LiqPayWidget
-#      - ./src/sample-module-payment-gateway:/var/www/html/magento/app/code/Magento/sample-module-payment-gateway
-#      - ./src/sample-module-servicecontract-new:/var/www/html/magento/app/code/Magento/sample-module-servicecontract-new
-#      - ./src/CityPayPaylink:/var/www/html/magento/app/code/Magento/CityPayPaylink
-      - ./src/phptest:/var/www/html/phptest
-      - ./src/25-xdebug.ini:/etc/php/7.2/cli/conf.d/25-xdebug.ini
-      - ./src/25-xdebug.ini:/etc/php/7.2/apache2/conf.d/25-xdebug.ini
+#      - ./rootcomposer2.json:/var/www/html/magento/composer.json
       - ./src/cronjobcaller.php:/var/www/html/magento/pub/cronjobcaller.php
- #     - ./src/php.ini:/etc/php/7.2/cli/php2.ini
-#&& ./ngrok http 80 > /dev/null &
-    #&&  && /bin/bash
-#    links:
-#      - mysql
-    command:  /bin/bash -c "/usr/local/bin/container-startup.sh "
-#
-    stdin_open: true
+    links:
+      - mysql
     tty: true
-
-#
-#  mysql:
-#    image: mariadb:10
-#    container_name: mysql
-#    restart: "no"
-#    ports:
-#      - "3306:3306"
-#    environment:
-#      - MYSQL_ROOT_PASSWORD=root
-#      - MYSQL_DATABASE=magento
-#    networks:
-#      - magentoworld
-#    volumes:
-#      #s- C:\Users\marti\IdeaProjects\citypay-paylink-magento\data:/var/lib/mysql
-#      - ./config:/etc/mysql/conf.d
-#      - ./data:/var/lib/mysql
-
+    stdin_open: true
+  mysql:
+    image: mariadb:10
+    container_name: citypay-magento-mysql
+    restart: "no"
+    ports:
+      - "13306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=magento
+    networks:
+      - magentoworld
+    volumes:
+      - ./config:/etc/mysql/conf.d
+      - ./data:/var/lib/mysql
 networks:
   magentoworld:
     driver: bridge
-
-
 
 volumes:
   magento2generated:
