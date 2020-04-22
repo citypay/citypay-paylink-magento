@@ -1,6 +1,6 @@
 {
-    "name": "citypay/module-paylink",
-    "description": "CityPay Paylink hosted payment page",
+    "name": "citypay/magento-paylink",
+    "description": "Magento2 plugin for the CityPay Paylink hosted payment page",
     "require": {
         "php": "7.*",
         "magento/module-sales": ">=100.0.0",
