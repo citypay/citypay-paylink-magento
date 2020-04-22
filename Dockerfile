@@ -1,15 +1,13 @@
-FROM ubuntu:19.04
+FROM ubuntu:18.04
 
 ENV TZ=Europe/London
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
         apt-get update && apt-get install -yq --no-install-recommends \
         apt-utils \
         curl \
-        # Install git
+        wget \
         git \
-        # Install apache
         apache2 \
-        # Install php 7.2
         libapache2-mod-php7.2 \
         php7.2-cli \
         php7.2-json \
@@ -39,18 +37,22 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         ca-certificates \
         unzip \
         cron \
+        sudo\
+        jq \
+        ssmtp \
         && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN locale-gen en_US.UTF-8 en_GB.UTF-8
 
+# used for access to Magento repo to download Magento
 ARG MAGENTO_REPO_USERNAME=""
 ARG MAGENTO_REPO_PASSWORD=""
 COPY files/init-build.sh /init-build.sh
-RUN /init-build.sh && rm /init-build.sh && \
-    composer create-project --repository=https://repo.magento.com/ magento/project-community-edition /var/www/html/magento  && \
-    rm /root/.composer/auth.json
 
+RUN /init-build.sh && rm /init-build.sh && \
+    composer create-project --repository=https://repo.magento.com/ magento/project-community-edition=2.3.4 /var/www/html/magento  && \
+    rm /root/.composer/auth.json
 
 RUN cd /var/www/html/magento && \
     chown -R www-data:www-data . && \
@@ -64,8 +66,6 @@ RUN a2enmod rewrite && \
             AllowOverride  All \n\
     </Directory>" >> /etc/apache2/sites-available/000-default.conf
 
-COPY files/start.sh /start.sh
-
 RUN chown -R www-data:www-data /var/www/html/magento/app/etc/ && \
     mkdir -p /var/www/html/magento/app/code/Magento  && \
     chown -R www-data:www-data /var/www/html/magento/app/code && \
@@ -78,12 +78,20 @@ RUN echo "\
 * * * * * /usr/bin/php /var/www/html/magento/bin/magento setup:cron:run >> /var/www/html/magento/var/log/setup.cron.log \n\
 " | crontab -u www-data -
 
-RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
+RUN cd /usr/local/bin && \
+    wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-arm64.tgz && \
+    tar zxvf ngrok-* && \
+    rm -rf ngrok-*
+
+COPY files/container-startup.sh /container-startup.sh
+RUN chmod +x /container-startup.sh && \
+    ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
     ln -sf /proc/self/fd/1 /var/log/apache2/error.log
 
-RUN apt-get update && apt-get install -yq --no-install-recommends \
-    php-xdebug
-#CMD cron
-#&& apachectl -D FOREGROUND
- #&& /start.sh
-CMD cron && /start.sh && apachectl -D FOREGROUND
+# removed debug
+#RUN apt-get update && apt-get install -yq --no-install-recommends \
+#    php-xdebug
+
+
+
+CMD cron && /container-startup.sh
