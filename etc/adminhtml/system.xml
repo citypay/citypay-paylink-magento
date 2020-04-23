@@ -21,10 +21,12 @@
                     <label>Debug</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
+                <!-- does not exist - blame ma
                 <field id="payment_action" translate="label" type="select" sortOrder="110" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Payment Action</label>
                     <source_model>CityPay\Paylink\Model\Adminhtml\Source\PaymentAction</source_model>
                 </field>
+                -->
                 <field id="testmode" translate="label" type="select" sortOrder="22" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Processing Mode</label>
                     <source_model>CityPay\Paylink\Model\Adminhtml\Source\TestMode</source_model>
