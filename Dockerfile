@@ -81,9 +81,9 @@ RUN chown -R www-data:www-data /var/www/html/magento/app/etc/ && \
     touch /var/log/syslog
 
 RUN echo "\
-* * * * * /usr/bin/php /var/www/html/magento/bin/magento cron:run | grep -v \"Ran jobs by schedule\" >> /var/www/html/magento/var/log/magento.cron.log \n\
-* * * * * /usr/bin/php /var/www/html/magento/update/cron.php >> /var/www/html/magento/var/log/update.cron.log \n\
-* * * * * /usr/bin/php /var/www/html/magento/bin/magento setup:cron:run >> /var/www/html/magento/var/log/setup.cron.log \n\
+0 1 * * * /usr/bin/php /var/www/html/magento/bin/magento cron:run | grep -v \"Ran jobs by schedule\" >> /var/www/html/magento/var/log/magento.cron.log \n\
+0 1 * * * /usr/bin/php /var/www/html/magento/update/cron.php >> /var/www/html/magento/var/log/update.cron.log \n\
+0 1 * * * /usr/bin/php /var/www/html/magento/bin/magento setup:cron:run >> /var/www/html/magento/var/log/setup.cron.log \n\
 " | crontab -u www-data -
 
 RUN cd /usr/local/bin && \
@@ -126,13 +126,13 @@ RUN echo "mysqld_safe --log-error=/var/log/mysql/error.log --user=mysql &"  > /t
     /init-build.sh && rm /init-build.sh && \
     cp /root/.composer/auth.json /var/www/html/magento/var/composer_home/auth.json && \
     chown www-data:www-data /var/www/html/magento/var/composer_home/auth.json && \
-#    sudo -u www-data php /var/www/html/magento/bin/magento sampledata:deploy --no-interaction && \
+    sudo -u www-data php /var/www/html/magento/bin/magento module:enable --all && \
+    sudo -u www-data php /var/www/html/magento/bin/magento sampledata:deploy --no-interaction && \
     sudo -u www-data php /var/www/html/magento/bin/magento setup:upgrade && \
     sudo -u www-data php /var/www/html/magento/bin/magento cache:flush && \
     sudo -u www-data php /var/www/html/magento/bin/magento cache:clean && \
     sudo -u www-data php /var/www/html/magento/bin/magento setup:di:compile && \
     rm /var/www/html/magento/var/composer_home/auth.json && \
     rm /root/.composer/auth.json
-
 
 CMD cron && /container-startup.sh
