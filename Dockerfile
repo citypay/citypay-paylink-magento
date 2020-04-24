@@ -1,6 +1,8 @@
 FROM ubuntu:18.04
 
 ENV TZ=Europe/London
+COPY files/mariadb.list /tmp/mariadb.list
+
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
         apt-get update && apt-get install -yq --no-install-recommends \
         apt-utils \
@@ -40,7 +42,14 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         sudo\
         jq \
         ssmtp \
-        && apt-get clean && rm -rf /var/lib/apt/lists/*
+        gnupg \
+        less vim && \
+        apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8 && \
+        mv /tmp/mariadb.list /etc/apt/sources.list.d/mariadb.list && \
+        apt-get update && \
+        apt-get install -yq --no-install-recommends mariadb-server && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*
+
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN locale-gen en_US.UTF-8 en_GB.UTF-8
@@ -51,8 +60,7 @@ ARG MAGENTO_REPO_PASSWORD=""
 COPY files/init-build.sh /init-build.sh
 
 RUN /init-build.sh && rm /init-build.sh && \
-    composer create-project --repository=https://repo.magento.com/ magento/project-community-edition=2.3.4 /var/www/html/magento  && \
-    rm /root/.composer/auth.json
+    composer create-project --repository=https://repo.magento.com/ magento/project-community-edition=2.3.3 /var/www/html/magento
 
 RUN cd /var/www/html/magento && \
     chown -R www-data:www-data . && \
@@ -83,15 +91,32 @@ RUN cd /usr/local/bin && \
     tar zxvf ngrok-* && \
     rm -rf ngrok-*
 
+COPY magento/app /var/www/html/magento/app
+COPY magento/generated /var/www/html/magento/generated
+COPY magento/pub /var/www/html/magento/pub
+
+RUN chown -R www-data:www-data /var/www/html/magento
+
+COPY files/data.zip /var/lib/data.zip
+
+WORKDIR /var/lib
+
+# switch on PHP display errors and setup database
+RUN sed -i 's/display_errors = Off/display_errors = On/g' /etc/php/7.2/apache2/php.ini && \
+    unzip data.zip && \
+    rm -rf mysql && \
+    mv data mysql && \
+    rm data.zip && \
+    chown -R mysql:mysql mysql
+
+WORKDIR /var/www/html/magento
+RUN composer require citypay/magento-paylink:1.0.5 && \
+    sudo -u www-data php bin/magento module:enable CityPay_Paylink
+
 COPY files/container-startup.sh /container-startup.sh
 RUN chmod +x /container-startup.sh && \
     ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
     ln -sf /proc/self/fd/1 /var/log/apache2/error.log
-
-# removed debug
-#RUN apt-get update && apt-get install -yq --no-install-recommends \
-#    php-xdebug
-
 
 
 CMD cron && /container-startup.sh

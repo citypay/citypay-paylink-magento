@@ -30,7 +30,8 @@ services:
     networks:
       - magentoworld
     volumes:
-      - ./etc:/var/www/html/magento/app/etc
+#      - ./magento/app:/var/www/html/magento/app
+#      - ./magento:/var/magento
 #      - ./src/Paylink:/var/www/html/magento/app/code/CityPay/Paylink
 #      - ./rootcomposer2.json:/var/www/html/magento/composer.json
       - ./src/cronjobcaller.php:/var/www/html/magento/pub/cronjobcaller.php
@@ -50,7 +51,6 @@ services:
     networks:
       - magentoworld
     volumes:
-      - ./config:/etc/mysql/conf.d
       - ./data:/var/lib/mysql
 networks:
   magentoworld:
