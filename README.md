@@ -10,50 +10,8 @@ frequently used national and international online payment methods and solutions 
 
 ## Installing CityPay Paylink Payment Module
 
-1. Download this project as a .zip file
 1. Change to directory where magento is installed (i.e cd /var/www/html/)
-1. Expand your magento2 composer.json file (i.e /var/www/html/composer.json) with the "repositories" block bellow:
-    ```json
-    "repositories": {
-     "0":   {
-            "type": "composer",
-            "url": "https://repo.magento.com/"
-        },
-		"citypay-paylink":{
-			"type":"package",
-			"package":{
-			    "name": "citypay/module-paylink",
-				"description": "CityPay Paylink hosted payment page",
-				"require": {
-					"php": "~5.5.0|~5.6.0|~7.0.0|~7.1.0|~7.2.0",
-					"magento/module-sales": "102.0.*",
-					"magento/module-checkout": "100.3.*",
-					"magento/module-payment": "100.3.*",
-					"magento/framework": "102.0.*",
-					"magento/magento-composer-installer": "0.1.13"
-				},
-				"type": "magento2-module",
-				"version": "100.0.3",
-				"license": [
-					"OSL-3.0",
-					"AFL-3.0"
-				],
-				"autoload": {
-					"files": [ "registration.php" ],
-					"psr-4": {
-						"CityPay\\Paylink\\": ""
-					}
-				},
-				"dist":{
-					"type":"zip",
-					"url":"~/Paylink.zip"
-				}
-			}
-		}
-    },
-    ```
-1. Run composer update
-1. Run composer require -vvv citypay/module-paylink=100.0.3
+1. Run composer require citypay/magento-paylink
 1. Ensure that the plugin is enabled (i.e using Magento CLI -> magento module:enable CityPay_Paylink)
 
 ## User Documentation
