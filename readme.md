@@ -19,14 +19,33 @@ MAGENTO_REPO_PASSWORD=f06c...
 NGROK_AUTHTOKEN=...
 ```
 
-### Development Build
-
 ### Testing Build
 
-The testing build is used to install a particular version of the github paylink version
-and magento version
+To run the file execute in the base directory as
 
-## Setting up Magento for the first time
+` docker container run --rm -it -p80:80 --env-file .env citypay/magento2:latest` or similar
+
+* will autoremove once complete
+* be interactive
+* map port 80 to 80 on the local machine
+* establish the environment file for runtime
+* run the default command of `cron && /container-startup.sh`
+
+The testing build is used to install a particular version of the github paylink version
+and magento version in Docker.
+
+The build runs the script `files/container-sgtartup.sh` which 
+
+0. Setup NGROK_AUTHTOKEN and obtain the NGROK_URL
+0. Starts apache in the background
+0. Initialises the `/root/.composer/auth.json` file with your Magento REPO details in .env
+0. Boots up `mysqld_safe` in the background (_note logs to /var/log/mysql/error.log_)
+0. initialises magento with the plugin as `setup:upgrade, cache:flush, cache:clean, setup:di:compile`
+0. starts a bash shell 
+
+## Notes on Setting up Magento for the first time
+
+This is performed in the Dockerfile build process on setup so no need to run on boot.
 
 I found that there was no entry for the admin session lifetime resulting in an error "Your current session has been expired"
 see a related [Stack Exchange discussion](https://magento.stackexchange.com/questions/209710/magento-2-admin-page-error-your-current-session-has-been-expired)
