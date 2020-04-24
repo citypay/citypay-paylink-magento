@@ -118,5 +118,21 @@ RUN chmod +x /container-startup.sh && \
     ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
     ln -sf /proc/self/fd/1 /var/log/apache2/error.log
 
+COPY files/init-build.sh /init-build.sh
+RUN echo "mysqld_safe --log-error=/var/log/mysql/error.log --user=mysql &"  > /tmp/config && \
+    echo "mysqladmin --password=root --silent --wait=30 ping || exit 1" >> /tmp/config && \
+    bash /tmp/config && \
+    rm -f /tmp/config && \
+    /init-build.sh && rm /init-build.sh && \
+    cp /root/.composer/auth.json /var/www/html/magento/var/composer_home/auth.json && \
+    chown www-data:www-data /var/www/html/magento/var/composer_home/auth.json && \
+#    sudo -u www-data php /var/www/html/magento/bin/magento sampledata:deploy --no-interaction && \
+    sudo -u www-data php /var/www/html/magento/bin/magento setup:upgrade && \
+    sudo -u www-data php /var/www/html/magento/bin/magento cache:flush && \
+    sudo -u www-data php /var/www/html/magento/bin/magento cache:clean && \
+    sudo -u www-data php /var/www/html/magento/bin/magento setup:di:compile && \
+    rm /var/www/html/magento/var/composer_home/auth.json && \
+    rm /root/.composer/auth.json
+
 
 CMD cron && /container-startup.sh

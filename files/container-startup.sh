@@ -50,11 +50,8 @@ EOM
 
 mysqld_safe --log-error=/var/log/mysql/error.log --user=mysql &
 
-sleep 3
-sudo -u www-data php /var/www/html/magento/bin/magento setup:upgrade
-sudo -u www-data php /var/www/html/magento/bin/magento cache:flush
-sudo -u www-data php /var/www/html/magento/bin/magento cache:clean
-sudo -u www-data php /var/www/html/magento/bin/magento setup:di:compile
+#sleep 3
+#sudo -u www-data php /var/www/html/magento/bin/magento sampledata:deploy
 
 /bin/bash
 #apachectl -D FOREGROUND
