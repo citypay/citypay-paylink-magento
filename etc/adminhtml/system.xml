@@ -9,8 +9,12 @@
     <system>
         <section id="payment">
             <group id="citypay_gateway" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>CityPay PayLink Gateway</label>
-                <fieldset_css>complex citypay-section</fieldset_css>
+                <label>CityPay</label>
+                <comment>CityPay Paylink Gateway Integration for hosted for payments.</comment>
+
+                <attribute type="expanded">1</attribute>
+                <fieldset_css>complex</fieldset_css>
+
                 <field id="active" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Enabled</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
@@ -22,12 +26,10 @@
                     <label>Debug</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <!-- does not exist - blame ma
                 <field id="payment_action" translate="label" type="select" sortOrder="110" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Payment Action</label>
                     <source_model>CityPay\Paylink\Model\Adminhtml\Source\PaymentAction</source_model>
                 </field>
-                -->
                 <field id="testmode" translate="label" type="select" sortOrder="22" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Processing Mode</label>
                     <source_model>CityPay\Paylink\Model\Adminhtml\Source\TestMode</source_model>
