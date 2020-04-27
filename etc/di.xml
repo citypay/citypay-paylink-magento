@@ -1,47 +1,23 @@
 <?xml version="1.0"?>
+<!--
+/**
+ * Copyright © 2016 Magento. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
 
     <preference for="Psr\Log\LoggerInterface" type="Magento\Framework\Logger\Monolog"/>
     <preference for="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" type="CityPay\Paylink\Model\PaylinkTokenInformationManagement" />
-    <preference for="CityPay\Paylink\Api\Data\PaylinkPostbackInterface" type="CityPay\Paylink\Model\PaylinkPostbackData" />
-    <preference for="Magento\Checkout\Controller\Onepage\Success" type="CityPay\Paylink\Controller\Onepage\Success"/>
-    <preference for="Magento\Checkout\Controller\Onepage\Failure" type="CityPay\Paylink\Controller\Onepage\Failure"/>
+    <preference for="\CityPay\Paylink\Api\Data\PaylinkPostbackInterface" type="\CityPay\Paylink\Model\PaylinkPostbackData" />
+    <preference for="\Magento\Checkout\Controller\Onepage\Success" type="\CityPay\Paylink\Controller\Onepage\Success"/>
+    <preference for="\Magento\Checkout\Controller\Onepage\Failure" type="\CityPay\Paylink\Controller\Onepage\Failure"/>
 
-    <!-- TYPES -->
-    <type name="CityPay\Paylink\Block\Info">
-        <arguments>
-            <argument name="config" xsi:type="object">CityPayModuleGatewayConfig</argument>
-        </arguments>
-    </type>
-    
-    <type name="CityPay\Paylink\Gateway\Http\Client\ClientMock">
-        <arguments>
-            <argument name="logger" xsi:type="object">CityPayModuleLogger</argument>
-        </arguments>
-    </type>
-
-    <type name="CityPay\Paylink\Gateway\Request\AuthorizationRequest">
-        <arguments>
-            <argument name="config" xsi:type="object">CityPayModuleGatewayConfig</argument>
-        </arguments>
-    </type>
-    
-    <type name="CityPay\Paylink\Gateway\Request\CaptureRequest">
-        <arguments>
-            <argument name="config" xsi:type="object">CityPayModuleGatewayConfig</argument>
-        </arguments>
-    </type>
-
-    <type name="CityPay\Paylink\Gateway\Request\VoidRequest">
-        <arguments>
-            <argument name="config" xsi:type="object">CityPayModuleGatewayConfig</argument>
-        </arguments>
-    </type>
-    
     <!-- Payment Method Facade configuration -->
     <virtualType name="CityPayPaymentGatewayFacade" type="Magento\Payment\Model\Method\Adapter">
         <arguments>
-            <argument name="code" xsi:type="const">CityPay\Paylink\Model\Ui\ConfigProvider::CODE</argument>
+            <argument name="code" xsi:type="const">\CityPay\Paylink\Model\Ui\ConfigProvider::CODE</argument>
             <argument name="formBlockType" xsi:type="string">Magento\Payment\Block\Form</argument>
             <argument name="infoBlockType" xsi:type="string">CityPay\Paylink\Block\Info</argument>
             <argument name="valueHandlerPool" xsi:type="object">CityPayGatewayValueHandlerPool</argument>
@@ -49,22 +25,25 @@
         </arguments>
     </virtualType>
 
-
     <!-- Configuration reader -->
-    <virtualType name="CityPayModuleGatewayConfig" type="Magento\Payment\Gateway\Config\Config">
+    <virtualType name="CityPayGatewayConfig" type="Magento\Payment\Gateway\Config\Config">
         <arguments>
-            <argument name="methodCode" xsi:type="const">CityPay\Paylink\Model\Ui\ConfigProvider::CODE</argument>
+            <argument name="methodCode" xsi:type="const">\CityPay\Paylink\Model\Ui\ConfigProvider::CODE</argument>
         </arguments>
     </virtualType>
 
-    <!-- Logger, initialized with CityPayModuleGatewayConfig -->
-    <virtualType name="CityPayModuleLogger" type="Magento\Payment\Model\Method\Logger">
+    <!-- Logger, initialized with CityPayGatewayConfig -->
+    <virtualType name="CityPayGatewayLogger" type="Magento\Payment\Model\Method\Logger">
         <arguments>
-            <argument name="config" xsi:type="object">CityPayModuleGatewayConfig</argument>
+            <argument name="config" xsi:type="object">CityPayGatewayConfig</argument>
         </arguments>
     </virtualType>
 
-    
+    <type name="CityPay\Paylink\Gateway\Http\Client\ClientMock">
+        <arguments>
+            <argument name="logger" xsi:type="object">CityPayGatewayLogger</argument>
+        </arguments>
+    </type>
 
     <!-- Commands infrastructure -->
     <virtualType name="CityPayGatewayCommandPool" type="Magento\Payment\Gateway\Command\CommandPool">
@@ -96,7 +75,11 @@
             </argument>
         </arguments>
     </virtualType>
-    
+    <type name="CityPay\Paylink\Gateway\Request\AuthorizationRequest">
+        <arguments>
+            <argument name="config" xsi:type="object">CityPayGatewayConfig</argument>
+        </arguments>
+    </type>
 
     <!-- Capture command -->
     <virtualType name="CityPayGatewayCaptureCommand" type="Magento\Payment\Gateway\Command\GatewayCommand">
@@ -109,7 +92,12 @@
         </arguments>
     </virtualType>
 
-    
+    <!-- Capture Request -->
+    <type name="CityPay\Paylink\Gateway\Request\CaptureRequest">
+        <arguments>
+            <argument name="config" xsi:type="object">CityPayGatewayConfig</argument>
+        </arguments>
+    </type>
 
     <!-- Void command -->
     <virtualType name="CityPayGatewayVoidCommand" type="Magento\Payment\Gateway\Command\GatewayCommand">
@@ -122,7 +110,12 @@
         </arguments>
     </virtualType>
 
-    
+    <!-- Void Request -->
+    <type name="CityPay\Paylink\Gateway\Request\VoidRequest">
+        <arguments>
+            <argument name="config" xsi:type="object">CityPayGatewayConfig</argument>
+        </arguments>
+    </type>
 
     <!-- Response handlers -->
     <virtualType name="CityPayGatewayResponseHandlerComposite" type="Magento\Payment\Gateway\Response\HandlerChain">
@@ -138,15 +131,20 @@
     <virtualType name="CityPayGatewayValueHandlerPool" type="Magento\Payment\Gateway\Config\ValueHandlerPool">
         <arguments>
             <argument name="handlers" xsi:type="array">
-                <item name="default" xsi:type="string">CityPayModuleGatewayConfigValueHandler</item>
+                <item name="default" xsi:type="string">CityPayGatewayConfigValueHandler</item>
             </argument>
         </arguments>
     </virtualType>
-
-    <virtualType name="CityPayModuleGatewayConfigValueHandler" type="Magento\Payment\Gateway\Config\ConfigValueHandler">
+    <virtualType name="CityPayGatewayConfigValueHandler" type="Magento\Payment\Gateway\Config\ConfigValueHandler">
         <arguments>
-            <argument name="configInterface" xsi:type="object">CityPayModuleGatewayConfig</argument>
+            <argument name="configInterface" xsi:type="object">CityPayGatewayConfig</argument>
         </arguments>
     </virtualType>
+
+    <type name="CityPay\Paylink\Block\Info">
+        <arguments>
+            <argument name="config" xsi:type="object">CityPayGatewayConfig</argument>
+        </arguments>
+    </type>
 
 </config>
