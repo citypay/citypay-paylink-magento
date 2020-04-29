@@ -11,7 +11,16 @@
                class="radio"
                data-bind="attr: {'id': getCode()}, value: getCode(), checked: isChecked, click: selectPaymentMethod, visible: isRadioButtonVisible()"/>
         <label class="label" data-bind="attr: {'for': getCode()}">
-            <span data-bind="text: getTitle()"></span>
+
+            <img src="https://citypay.com/static/img/logo-x500.png" alt="CityPay" style="vertical-align: middle" height="30"/>
+            <span>&nbsp;&nbsp;&nbsp;</span>
+            <img src="https://secure.citypay.com/paylink3/img/cs-logo-vi-large.gif" style="vertical-align: middle" width="35" />
+            <img src="https://secure.citypay.com/paylink3/img/cs-logo-mc-large.gif" style="vertical-align: middle" width="35" />
+
+            <br/>
+            <div style="margin-left: 18pt; font-size: 90%;  ">
+                Secure online card payments
+            </div>
         </label>
     </div>
 
@@ -25,8 +34,11 @@
             <!--/ko-->
         </div>
 
+
+
         <div class="actions-toolbar">
             <div class="primary">
+
                 <button class="action primary checkout"
                         type="submit"
                         data-bind="
@@ -37,5 +49,11 @@
                 </button>
             </div>
         </div>
+
+        <p style="font-size: 80%; opacity: 60%; ">
+            <img src="https://secure.citypay.com/paylink3/img/favicon-x32.png" width="20" style="display: inline; vertical-align: middle" />
+            CityPay is a PCI-DSS level 1 certified payment provider
+        </p>
+
     </div>
 </div>
