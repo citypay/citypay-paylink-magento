@@ -26,14 +26,11 @@ interface PaylinkTokenInformationManagementInterface2
     /**
      * process a PaylinkPostback for previous request.
      *
-#     * @param \CityPay\Paylink\Api\Data\PaylinkPostbackInterface $postbackInfo
+     * @param \CityPay\Paylink\Api\Data\PaylinkPostbackInterface
      * @throws \Magento\Framework\Exception\CouldNotSaveException
-     * @return string $json.
+     * @return string $data
      */
-    public function processPaylinkPostback(
-       # \CityPay\Paylink\Api\Data\PaylinkPostbackInterface $postbackInfo
-
-    );
+    public function processPaylinkPostback();
 
 
 }

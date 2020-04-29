@@ -3,8 +3,10 @@
 
 namespace CityPay\Paylink\Api\Data;
 
-//extends \Magento\Framework\Api\ExtensibleDataInterface
 interface PaylinkPostbackInterface
 {
-
+    /**
+     * @return string[]
+     */
+    public function getData();
 }

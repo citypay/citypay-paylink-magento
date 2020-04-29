@@ -5,4 +5,5 @@
 /rootcomposer2.json
 /ZipPackage-README.md
 .DS_Store
+.env
 

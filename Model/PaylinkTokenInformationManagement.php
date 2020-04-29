@@ -75,7 +75,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
     /**
      * @var \Magento\Framework\Api\SearchCriteriaBuilder
      */
-    protected  $searchCriteriaBuilder;
+    protected $searchCriteriaBuilder;
 
     /**
      * @var UrlInterface $urlBuilder
@@ -88,14 +88,14 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      * @param \Magento\Checkout\Model\Session $checkoutSession
      * @param \Magento\Quote\Api\BillingAddressManagementInterface $billingAddressManagement
      * @param \Magento\Quote\Api\PaymentMethodManagementInterface $paymentMethodManagement
-     * @param \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,
+     * @param \Magento\Sales\Api\OrderRepositoryInterface $orderRepository ,
      * @param \Magento\Framework\Api\SearchCriteriaBuilder $searchCriteriaBuilder
-     * @param \Magento\Payment\Gateway\Http\TransferBuilder $transferBuilder,
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-     * @param \Psr\Log\LoggerInterface $logger,
-     * @param RestRequest $request,
-     * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
-     * @param \Magento\Store\Model\StoreManagerInterface $storeManager,
+     * @param \Magento\Payment\Gateway\Http\TransferBuilder $transferBuilder ,
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig ,
+     * @param \Psr\Log\LoggerInterface $logger ,
+     * @param RestRequest $request ,
+     * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager ,
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManager ,
      * @param \Magento\Framework\UrlInterface $urlBuilder
      * @codeCoverageIgnore
      */
@@ -111,18 +111,19 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\UrlInterface $urlBuilder
-    ) {
+    )
+    {
         $this->checkoutSession = $checkoutSession;
         $this->billingAddressManagement = $billingAddressManagement;
-        $this->orderRepository=$orderRepository;
-        $this->searchCriteriaBuilder=$searchCriteriaBuilder;
-        $this->transferBuilder=$transferBuilder;
-        $this->scopeConfig=$scopeConfig;
-        $this->logger=$logger;
-        $this->_request=$request;
-        $this->_cookieManager=$cookieManager;
-        $this->_storeManager=$storeManager;
-        $this->urlBuilder=$urlBuilder;
+        $this->orderRepository = $orderRepository;
+        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
+        $this->transferBuilder = $transferBuilder;
+        $this->scopeConfig = $scopeConfig;
+        $this->logger = $logger;
+        $this->_request = $request;
+        $this->_cookieManager = $cookieManager;
+        $this->_storeManager = $storeManager;
+        $this->urlBuilder = $urlBuilder;
         $this->logger->debug('PaylinkTokenInformationManagement constructor');
     }
     /*
@@ -150,7 +151,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
     public function getPaylinkToken(
         \Magento\Quote\Api\Data\PaymentInterface $paymentMethod
 
-    ) {
+    )
+    {
         $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken');
 
         try {
@@ -159,7 +161,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             $request = $this->buildRequestData($payment);
             $transfer = $this->create($request);
             $response = $this->placeRequest($transfer);
-            $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken '.$response);
+            $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken ' . $response);
 
             return $response;
             //return response
@@ -169,8 +171,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
             }
             */
-        }
-        catch (Exception $ex){
+        } catch (Exception $ex) {
             $this->logger->error($ex->getMessage());
         }
 
@@ -178,13 +179,9 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
 
     /**
-
      * @param $postback_data
-
      * @return bool
-
      * @throws Exception
-
      */
 
     public function validatePostbackDigest($postback_data)
@@ -231,7 +228,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             ->addFilter('increment_id', $incrementId, 'eq')->create();
         $this->logger->debug('made criteria');
         $searchResult = $this->orderRepository->getList($searchCriteria);
-        $order=null;
+        $order = null;
         $this->logger->debug('searched');
         if ($searchResult != null) {
             $searchItems = $searchResult->getItems();
@@ -250,30 +247,29 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             }
             $this->logger->debug(json_encode($arrItems));
 
-            if (sizeof($searchItems)==1)
-            {
+            if (sizeof($searchItems) == 1) {
                 $this->logger->debug('assigning order');
-                $order=$searchItems[key($searchItems)];
+                $order = $searchItems[key($searchItems)];
 
                 $this->logger->debug(gettype($order));
             }
-        }
-        else
+        } else {
             $this->logger->debug('search result null');
-        //$searchResult->
+            //$searchResult->
+        }
 
         return $order;
     }
+
     /**
      * @inheritdoc
      */
-    public function processPaylinkPostback(
-        #      \CityPay\Paylink\Api\Data\PaylinkPostbackInterface $postbackInfo
-
-    ) {
+    public function processPaylinkPostback()
+    {
         $this->logger->debug('PaylinkTokenInformationManagement processPaylinkPostback');
-        $postbackString=$this->_request->getContent();
-        $postbackData=json_decode($postbackString);
+        $postbackString = $this->_request->getContent();
+
+        $postbackData = json_decode($postbackString);
         try {
             $path = 'payment/citypay_gateway/licencekey';
             $this->licence_key = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
@@ -281,42 +277,46 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             if ($this->validatePostbackDigest($postbackData)) {
                 $this->logger->debug('good PostbackDigest');
                 $incrementId = $postbackData->identifier;
-                $transno=$postbackData->transno;
-                $amountAuthd=$postbackData->amount/100.0;
-                $order=$this->getOrderFromIncId($incrementId);
-                $this->logger->debug('order='. json_encode($order));
-                $payment=$order->getPayment(); #OrderPaymentInterface
-                $this->logger->debug('payment='. json_encode($payment));
+                $transno = $postbackData->transno;
+                $amountAuthd = $postbackData->amount / 100.0;
+                $order = $this->getOrderFromIncId($incrementId);
+                $this->logger->debug('order=' . json_encode($order));
+                $payment = $order->getPayment(); #OrderPaymentInterface
+                $this->logger->debug('payment=' . json_encode($payment));
                 #$amtAuth=$payment->getBaseAmountAuthorized() ;
-                $this->logger->debug('amtAuthd= '. $amountAuthd);
-                $this->logger->debug('orderState= '. $order->getState());
+                $this->logger->debug('amtAuthd= ' . $amountAuthd);
+                $this->logger->debug('orderState= ' . $order->getState());
                 #enhance Payment with data from postback
                 #eg $payment->setAdditionalInformation(Info::PAYPAL_CVV_2_MATCH, $response->getData('cvv2match'))
                 #$payment->setAdditionalData();
                 if ($postbackData->authorised) {
                     $payment->registerAuthorizationNotification($amountAuthd);
                     # open for settlement, assigned to a batch or settled
-                    if ($postbackData->status=='O' || $postbackData->status=='A' || $postbackData->status=='S')
+                    if ($postbackData->status == 'O' || $postbackData->status == 'A' || $postbackData->status == 'S')
                         $payment->registerCaptureNotification($amountAuthd);
-                }
-                else
-                {
+                } else {
                     $order->cancel();
                 }
-                $order->addCommentToStatusHistory(sprintf('CityPay mode %s\nCityPay TransNo: %d\nCityPay authenticationResult %s\nCityPay AVSResponse %s\nCityPay CSCResponse %s\nCityPay errorcode %s\nCityPay result %s\nCityPay status %s',$postbackData->mode,$transno,$postbackData->authenticationResult , $postbackData->AVSResponse,$postbackData->CSCResponse, $postbackData->errorcode,$postbackData->result,$postbackData->status));
+                $order->addCommentToStatusHistory(sprintf('<span>CityPay %s transaction, transNo: %d <br/> AuthenticationResult %s <br/> AVSResponse %s <br/> CSCResponse %s <br/>Response Code %s <br/>Result %s <br/>Status %s</span>',
+                    $postbackData->mode,
+                    $transno,
+                    isset($postbackData->authenticationResult) ?  $postbackData->authenticationResult : "-" ,
+                    isset($postbackData->AVSResponse) ? $postbackData->AVSResponse : "-",
+                    isset($postbackData->CSCResponse) ? $postbackData->CSCResponse : "-",
+                    isset($postbackData->errorcode) ? $postbackData->errorcode : "-",
+                    isset($postbackData->result) ? $postbackData->result : "-",
+                    isset($postbackData->status) ? $postbackData->status : "-"
+                ));
 
                 $order->save();
-            }
-            else
+            } else
                 $this->logger->debug('invalid postback');
-        }
-        catch (\Exception $ex)
-        {
-            $this->logger->debug('\\ exception error' );
-            $this->logger->debug($ex==null?'true':'false');
-            $msg=$ex->getMessage();
-            $this->logger->debug(gettype($msg) );
-            $this->logger->debug($msg );
+        } catch (\Exception $ex) {
+            $this->logger->debug('\\ exception error');
+            $this->logger->debug($ex == null ? 'true' : 'false');
+            $msg = $ex->getMessage();
+            $this->logger->debug(gettype($msg));
+            $this->logger->debug($msg);
             $this->logger->debug($ex->getTraceAsString());
         }
         #   $content=json_decode($this->_request->getContent());
@@ -324,10 +324,11 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         #   $this->logger->debug(json(encode(body)) );
     }
 
-    private function trimString(&$item,$key)
+    private function trimString(&$item, $key)
     {
-        $item=trim($item);
+        $item = trim($item);
     }
+
     public function buildRequestData($payment)
     {
         /*
@@ -339,128 +340,128 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         /  ** @var PaymentDataObjectInterface $payment * /
         $payment = $buildSubject['payment'];
         */
-        $ad=$payment->getAdditionalData();
+        $ad = $payment->getAdditionalData();
         $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken' . json_encode($ad));
-        $orderId=$ad['orderId'];
-        $order=$this->orderRepository->get($orderId);
+        $orderId = $ad['orderId'];
+        $order = $this->orderRepository->get($orderId);
         #$this->getOrderFromIncId($order->getIncrementId()); // test function here
 
-        $billingAddress=$order->getBillingAddress();
+        $billingAddress = $order->getBillingAddress();
 
         //$order = $payment->getOrder();
         $this->logger->debug('PaylinkTokenInformationManagement getPaylinkToken' . json_encode($order));
         $path = 'payment/citypay_gateway/postbackhost';
         $postbackHost = $this->scopeConfig->getValue($path);
-        $this->logger->debug('postbackhost='.$postbackHost);
+        $this->logger->debug('postbackhost=' . $postbackHost);
 
         $path = 'payment/citypay_gateway/merchantid';
         $merchantid = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-        $this->logger->debug('merchantid='.$merchantid);
+        $this->logger->debug('merchantid=' . $merchantid);
 
         $path = 'payment/citypay_gateway/licencekey';
         $licencekey = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-        $this->logger->debug('licencekey='.$licencekey);
+        $this->logger->debug('licencekey=' . $licencekey);
 
         $path = 'payment/citypay_gateway/orderconfirmationemail';
         $orderconfirmationemail = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-        $this->logger->debug('orderconfirmationemail='.$orderconfirmationemail);
+        $this->logger->debug('orderconfirmationemail=' . $orderconfirmationemail);
 
         $path = 'payment/citypay_gateway/options';
         $options = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-        $this->logger->debug('options='.$options);
-        if ($options!=null) {
+        $this->logger->debug('options=' . $options);
+        if ($options != null) {
             $optionsarray = explode(",", $options);
             array_walk($optionsarray, trimString);
-        }
-        else
-            $optionsarray=null;
+        } else
+            $optionsarray = null;
 
         $path = 'payment/citypay_gateway/postback_policy';
         $postback_policy = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-        $this->logger->debug('postback_policy='.$postback_policy);
+        $this->logger->debug('postback_policy=' . $postback_policy);
 
         $path = 'payment/citypay_gateway/testmode';
         $testmode = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-        $this->logger->debug('testmode='.$testmode);
+        $this->logger->debug('testmode=' . $testmode);
 
-        $passThroughHeaders=[];
-        $cookieList='';
+        $passThroughHeaders = [];
+        $cookieList = '';
         # see https://docs.magento.com/m2/ce/user_guide/stores/cookie-reference.html
-        $cookieList=$this->appendCookie($cookieList,'store');
-        $cookieList=$this->appendCookie($cookieList,'section_data_ids');
-        $cookieList=$this->appendCookie($cookieList,'XDEBUG_SESSION');
-        $cookieList=$this->appendCookie($cookieList,'PHPSESSID');
+        $cookieList = $this->appendCookie($cookieList, 'store');
+        $cookieList = $this->appendCookie($cookieList, 'section_data_ids');
+        $cookieList = $this->appendCookie($cookieList, 'XDEBUG_SESSION');
+        $cookieList = $this->appendCookie($cookieList, 'PHPSESSID');
         #$cookieList=$this->appendCookie($cookieList,'form_key');
-        if (strlen($cookieList)>0)
-            $passThroughHeaders['Cookie']=$cookieList;
+        if (strlen($cookieList) > 0)
+            $passThroughHeaders['Cookie'] = $cookieList;
 
         #get storecode for postback url
-        $storeId=$order->getStoreId();
-        $storeCode=$this->_storeManager->getStore($storeId)->getCode();
+        $storeId = $order->getStoreId();
+        $storeCode = $this->_storeManager->getStore($storeId)->getCode();
 
         $this->logger->debug($this->urlBuilder->getUrl('checkout/onepage/success/'));
 
-        $configData= [
-            'postback'=>$postbackHost.'/rest/'.$storeCode.'/V1/paylink/processAuthResponse',
-            'redirect_success'=>$this->urlBuilder->getUrl('checkout/onepage/success/'),
-            'redirect_failure'=>$this->urlBuilder->getUrl('checkout/onepage/failure/')
+        $configData = [
+            'postback' => $postbackHost . '/rest/' . $storeCode . '/V1/paylink/processAuthResponse',
+            'redirect_success' => $this->urlBuilder->getUrl('checkout/onepage/success/'),
+            'redirect_failure' => $this->urlBuilder->getUrl('checkout/onepage/failure/')
             #    ,'redirect_success'=>''
             #    ,'redirect_failure'=>''
         ];
-        $streets=$billingAddress->getStreet();#returns an array
-        $cardholder=[
-            'email'=>$order->getCustomerEmail(),
-            'firstname'=>$billingAddress->getFirstname(),
-            'lastname'=>$billingAddress->getLastname(),
-            'address'=>[
-                'address1'=>count($streets)>0?$streets[0]:null,
-                'address2'=>count($streets)>1?$streets[1]:null,
+        $streets = $billingAddress->getStreet();#returns an array
+        $cardholder = [
+            'email' => $order->getCustomerEmail(),
+            'firstname' => $billingAddress->getFirstname(),
+            'lastname' => $billingAddress->getLastname(),
+            'address' => [
+                'address1' => count($streets) > 0 ? $streets[0] : null,
+                'address2' => count($streets) > 1 ? $streets[1] : null,
 
-                'area'=>$billingAddress->getCity().($billingAddress->getRegion()!=null?','.$billingAddress->getRegion():''),
-                'postcode'=>$billingAddress->getPostcode(),
-                'country'=>$billingAddress->getCountryId()
+                'area' => $billingAddress->getCity() . ($billingAddress->getRegion() != null ? ',' . $billingAddress->getRegion() : ''),
+                'postcode' => $billingAddress->getPostcode(),
+                'country' => $billingAddress->getCountryId()
             ]
         ];
 
-        if ($postback_policy!=null){
-            $configData['postback_policy']=$postback_policy;
+        if ($postback_policy != null) {
+            $configData['postback_policy'] = $postback_policy;
         }
-        if ($passThroughHeaders!=null)
-            $configData['passThroughHeaders']=$passThroughHeaders;
+        if ($passThroughHeaders != null)
+            $configData['passThroughHeaders'] = $passThroughHeaders;
 
-        $requestData= [
-            'test'=>$testmode,
+        $requestData = [
+            'test' => $testmode,
             'identifier' => $order->getData('increment_id'),
-            'amount' => (int)(floatval($order->getData('grand_total'))*100), //'total_due'
-            'merchantId'=>(int)$merchantid,
-            'licenceKey'=>$licencekey,
-            'clientVersion'=>'magento2 payment module v 2.0.1'
+            'amount' => (int)(floatval($order->getData('grand_total')) * 100), //'total_due'
+            'merchantId' => (int)$merchantid,
+            'licenceKey' => $licencekey,
+            'clientVersion' => 'magento2 payment module v 2.0.1'
         ];
         if ($orderconfirmationemail) {
-            $requestData['email']=$orderconfirmationemail;
+            $requestData['email'] = $orderconfirmationemail;
         }
-        if ($optionsarray!=null) {
-            $requestData['options']=$optionsarray;
+        if ($optionsarray != null) {
+            $requestData['options'] = $optionsarray;
         }
-        $requestData['config']=$configData;
-        $requestData['cardholder']=$cardholder;
+        $requestData['config'] = $configData;
+        $requestData['cardholder'] = $cardholder;
         $order->setStatus(Order::STATE_PENDING_PAYMENT);
         #save the order.....
         $order->save();
         return $requestData;
 
     }
-    function appendCookie($cookieList,$cookieName)
+
+    function appendCookie($cookieList, $cookieName)
     {
-        $cookie=$this->_cookieManager->getCookie($cookieName);
-        if ($cookie!=null)
-        {
-            if (strlen($cookieList)>0)
-                $cookieList=$cookieList.';';
-            $cookieList=$cookieList.$cookieName.'='.$cookie;
+        $cookie = $this->_cookieManager->getCookie($cookieName);
+        if ($cookie != null) {
+            if (strlen($cookieList) > 0)
+                $cookieList = $cookieList . ';';
+            $cookieList = $cookieList . $cookieName . '=' . $cookie;
         }
         return $cookieList;
     }
+
     /**
      * Builds gateway transfer object
      *
@@ -473,7 +474,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         return $this->transferBuilder
             ->setBody($request)
             ->setMethod('POST')
-            ->setHeaders(array('content-type:application/json') )
+            ->setHeaders(array('content-type:application/json'))
             ->setUri('https://secure.citypay.com/paylink3/create')
             ->build();
     }
@@ -487,12 +488,12 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
     public function placeRequest(TransferInterface $transferObject)
     {
         $this->logger->debug(json_encode($transferObject));
-        $ch=curl_init($transferObject->getUri());
-        curl_setopt($ch,CURLOPT_POST,$transferObject->getMethod()=='POST');
-        curl_setopt($ch,CURLOPT_POSTFIELDS,json_encode($transferObject->getBody()));
-        curl_setopt($ch,CURLOPT_HTTPHEADER,$transferObject->getHeaders());
+        $ch = curl_init($transferObject->getUri());
+        curl_setopt($ch, CURLOPT_POST, $transferObject->getMethod() == 'POST');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($transferObject->getBody()));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $transferObject->getHeaders());
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $response=curl_exec($ch);
+        $response = curl_exec($ch);
         curl_close($ch);
         $this->logger->debug(json_encode($response));
         return $response;
