@@ -28,8 +28,8 @@ final class ConfigProvider implements ConfigProviderInterface
             'payment' => [
                 self::CODE => [
                     'transactionResults' => [
-                        ClientMock::SUCCESS => __('Success'),
-                        ClientMock::FAILURE => __('Fraud')
+                        1 => __('Success'),
+                        0 => __('Fraud')
                     ]
                 ]
             ]
