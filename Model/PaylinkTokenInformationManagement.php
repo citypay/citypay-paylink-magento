@@ -240,7 +240,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                 #enhance Payment with data from postback
                 #eg $payment->setAdditionalInformation(Info::PAYPAL_CVV_2_MATCH, $response->getData('cvv2match'))
                 #$payment->setAdditionalData();
-                if ($postbackData->authorised) {
+                if ($postbackData->authorised == 'true') {
                     $payment->registerAuthorizationNotification($amountAuthd);
                     # open for settlement, assigned to a batch or settled
                     $this->logger->info('Transaction authorised');
@@ -254,14 +254,15 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                     $this->logger->info('Order cancelled due to transaction not being authorised');
                     $order->cancel();
                 }
-                $order->addCommentToStatusHistory(sprintf('<span>CityPay %s transaction, transNo: %d <br/> AuthenticationResult %s <br/> AVSResponse %s <br/> CSCResponse %s <br/>Response Code %s <br/>Result %s <br/>Status %s</span>',
+                $order->addCommentToStatusHistory(sprintf('<span>CityPay Paylink *%s* transaction |<br/> Result: %s |<br/> Card: %s |<br/> TransNo: %d |<br/> AuthCode: %s |<br/> AuthResult: %s |<br/> AVS: %s |<br/> CSC: %s |<br/> Status: %s </span>',
                     $postbackData->mode,
+                    (isset($postbackData->errorcode) ? $postbackData->errorcode  : "-") . ':' . (isset($postbackData->errormessage) ? $postbackData->errormessage  : ""),
+                    isset($postbackData->maskedPan) ? $postbackData->maskedPan : "-",
                     $transno,
+                    isset($postbackData->authcode) ? $postbackData->authcode : "-",
                     isset($postbackData->authenticationResult) ? $postbackData->authenticationResult : "-",
                     isset($postbackData->AVSResponse) ? $postbackData->AVSResponse : "-",
                     isset($postbackData->CSCResponse) ? $postbackData->CSCResponse : "-",
-                    isset($postbackData->errorcode) ? $postbackData->errorcode : "-",
-                    isset($postbackData->result) ? $postbackData->result : "-",
                     isset($postbackData->status) ? $postbackData->status : "-"
                 ));
 
