@@ -11,7 +11,7 @@ frequently used national and international online payment methods and solutions 
 ## Installing CityPay Paylink Payment Module
 
 1. Change to directory where magento is installed (i.e cd /var/www/html/)
-1. Run composer require citypay/magento-paylink
+1. Run `composer require citypay/magento-paylink`
 1. Ensure that the plugin is enabled (i.e using Magento CLI -> magento module:enable CityPay_Paylink)
 
 ## User Documentation
