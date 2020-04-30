@@ -148,16 +148,18 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         \Magento\Quote\Api\Data\PaymentInterface $paymentMethod
     )
     {
-        $this->logger->debug('CityPay:Paylink:getPaylinkToken');
-//        try {
+        $this->logger->debug('CityPay:Paylink:getPaylinkToken Start');
+        try {
             $payment = $paymentMethod;
             $request = $this->buildPaylinkRequest($payment);
             $transfer = $this->createHttpRequest($request);
             $response = $this->processHttp($transfer);
             return $response;
-//        } catch (Exception $ex) {
-//            $this->logger->error('CityPay:Paylink:getPaylinkToken:' . $ex->getMessage());
-//        }
+        } catch (Exception $ex) {
+            $this->logger->error('CityPay:Paylink:getPaylinkToken:' . $ex->getMessage());
+        } finally {
+            $this->logger->debug('CityPay:Paylink:getPaylinkToken End');
+        }
     }
 
 
@@ -215,16 +217,17 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
     public function processPaylinkPostback()
     {
 
-        $this->logger->debug('CityPay:Paylink:processPaylinkPostback');
-        $postbackString = $this->_request->getContent();
-        $postbackData = json_decode($postbackString);
-
-        $this->logger->debug('CityPay:Paylink:processPaylinkPostback: ' . $postbackString);
-
+        $this->logger->debug('CityPay:Paylink:processPaylinkPostback Start');
         try {
+
+            $postbackString = $this->_request->getContent();
+            $postbackData = json_decode($postbackString);
+
+            $this->logger->debug('CityPay:Paylink:processPaylinkPostback: ' . $postbackString);
+
+
             $path = 'payment/citypay_gateway/licencekey';
             $this->licence_key = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-            $this->logger->debug($this->licence_key);
 
             if ($this->validatePostbackDigest($postbackData)) {
 
@@ -240,9 +243,15 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                 if ($postbackData->authorised) {
                     $payment->registerAuthorizationNotification($amountAuthd);
                     # open for settlement, assigned to a batch or settled
-                    if ($postbackData->status == 'O' || $postbackData->status == 'A' || $postbackData->status == 'S')
+                    $this->logger->info('Transaction authorised');
+
+                    if ($postbackData->status == 'O' || $postbackData->status == 'A' || $postbackData->status == 'S') {
+                        $this->logger->info('Transaction captured');
                         $payment->registerCaptureNotification($amountAuthd);
+                    }
+
                 } else {
+                    $this->logger->info('Order cancelled due to transaction not being authorised');
                     $order->cancel();
                 }
                 $order->addCommentToStatusHistory(sprintf('<span>CityPay %s transaction, transNo: %d <br/> AuthenticationResult %s <br/> AVSResponse %s <br/> CSCResponse %s <br/>Response Code %s <br/>Result %s <br/>Status %s</span>',
@@ -256,12 +265,15 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                     isset($postbackData->status) ? $postbackData->status : "-"
                 ));
 
+                $this->logger->info('Saved to order');
                 $order->save();
             } else {
                 $this->logger->info('invalid postback (digest mismatch)');
             }
         } catch (\Exception $ex) {
             $this->logger->error($ex->getMessage());
+        } finally {
+            $this->logger->debug('CityPay:Paylink:processPaylinkPostback End');
         }
     }
 
@@ -300,10 +312,10 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $passThroughHeaders = [];
         $cookieList = '';
         # see https://docs.magento.com/m2/ce/user_guide/stores/cookie-reference.html
-        $cookieList = $this->appendCookie($cookieList, 'store');
-        $cookieList = $this->appendCookie($cookieList, 'section_data_ids');
+//        $cookieList = $this->appendCookie($cookieList, 'store');
+//        $cookieList = $this->appendCookie($cookieList, 'section_data_ids');
 //        $cookieList = $this->appendCookie($cookieList, 'XDEBUG_SESSION');
-        $cookieList = $this->appendCookie($cookieList, 'PHPSESSID');
+//        $cookieList = $this->appendCookie($cookieList, 'PHPSESSID');
         #$cookieList=$this->appendCookie($cookieList,'form_key');
 //        if (strlen($cookieList) > 0)
 //            $passThroughHeaders['Cookie'] = $cookieList;
@@ -396,7 +408,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      */
     public function processHttp(TransferInterface $transferObject)
     {
-        $this->logger->debug('CityPay:Paylink:processHttp:Request' . json_encode($transferObject));
+        $this->logger->debug('CityPay:Paylink:processHttp:Request' . json_encode($transferObject->getBody()));
         $ch = curl_init($transferObject->getUri());
         curl_setopt($ch, CURLOPT_POST, $transferObject->getMethod() == 'POST');
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($transferObject->getBody()));
