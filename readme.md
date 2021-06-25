@@ -34,6 +34,13 @@ To be able to use the CityPay Paylink Plugin the merchant must configure their f
     are remotely accessible through the internet.
  - **Processing Mode** (Select TEST to process in test mode or LIVE to perform Live Transactions)
 
+### Enabling logging
+The interaction between Magento and CityPay Paylink hosted payment form service may be monitored by enabling the Debug option appearing on the module settings form.
+
+Log payment events appearing in the resultant log file will help to trace any difficulties you may experience accepting payments using the CityPay Paylink service.
+
+The log file can be found at `{root}/var/log/debug.log` where root is normally `/var/www/html/magento`.
+
 ## Customer Experience
 
 ### Checkout
