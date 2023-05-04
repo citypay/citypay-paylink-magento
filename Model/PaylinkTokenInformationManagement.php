@@ -237,9 +237,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                 $order = $this->findOrder($identifier);
                 $payment = $order->getPayment(); #OrderPaymentInterface
 
-                #enhance Payment with data from postback
-                #eg $payment->setAdditionalInformation(Info::PAYPAL_CVV_2_MATCH, $response->getData('cvv2match'))
-                #$payment->setAdditionalData();
                 if ($postbackData->authorised == 'true') {
                     $payment->registerAuthorizationNotification($amountAuthd);
                     # open for settlement, assigned to a batch or settled
@@ -311,15 +308,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $testmode = $this->scopeConfig->getValue('payment/citypay_gateway/testmode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 
         $passThroughHeaders = [];
-        $cookieList = '';
-        # see https://docs.magento.com/m2/ce/user_guide/stores/cookie-reference.html
-//        $cookieList = $this->appendCookie($cookieList, 'store');
-//        $cookieList = $this->appendCookie($cookieList, 'section_data_ids');
-//        $cookieList = $this->appendCookie($cookieList, 'XDEBUG_SESSION');
-//        $cookieList = $this->appendCookie($cookieList, 'PHPSESSID');
-        #$cookieList=$this->appendCookie($cookieList,'form_key');
-//        if (strlen($cookieList) > 0)
-//            $passThroughHeaders['Cookie'] = $cookieList;
 
         #get storecode for postback url
         $storeId = $order->getStoreId();
@@ -327,8 +315,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
         $configData = [
             'postback' => $postbackHost . '/rest/' . $storeCode . '/V1/paylink/processAuthResponse',
-            'redirect_success' => $this->urlBuilder->getUrl('checkout/onepage/success/'),
-            'redirect_failure' => $this->urlBuilder->getUrl('checkout/onepage/failure/')
+            'redirect_success' => "GET:".$this->urlBuilder->getUrl('checkout/onepage/success'),
+            'redirect_failure' => "GET:".$this->urlBuilder->getUrl('checkout/onepage/failure')
         ];
         $streets = $billingAddress->getStreet();#returns an array
         $cardholder = [
@@ -372,17 +360,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
         return $requestData;
 
-    }
-
-    function appendCookie($cookieList, $cookieName)
-    {
-        $cookie = $this->_cookieManager->getCookie($cookieName);
-        if ($cookie != null) {
-            if (strlen($cookieList) > 0)
-                $cookieList = $cookieList . ';';
-            $cookieList = $cookieList . $cookieName . '=' . $cookie;
-        }
-        return $cookieList;
     }
 
     /**
