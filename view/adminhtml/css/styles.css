@@ -1,7 +1,7 @@
 
-.citypay-section .heading {background: url("https://citypay.com/static/img/logo-x500.png") no-repeat 0 50% / 18rem auto; padding-left: 20rem;}
+.citypay-section .heading {background: url("https://www.citypay.com/wp-content/uploads/2022/08/Citypaylogo-x500.png") no-repeat 0 50% / 18rem auto; padding-left: 20rem;}
 
 fieldset#payment_us_citypay_gateway {
     border: 1px solid red;
-    background: url("https://citypay.com/static/img/logo-x500.png") no-repeat 0 50% / 18rem auto; padding-left: 20rem;
+    background: url("https://www.citypay.com/wp-content/uploads/2022/08/Citypaylogo-x500.png") no-repeat 0 50% / 18rem auto; padding-left: 20rem;
 }

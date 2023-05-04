@@ -1,5 +1,5 @@
-<!--![image](https://citypay.com/static/img/logo-x500.png)-->
-<img src="https://citypay.com/static/img/logo-x500.png" height="75"/>
+<!--![image](https://www.citypay.com/wp-content/uploads/2022/08/Citypaylogo-x500.png)-->
+<img src="https://www.citypay.com/wp-content/uploads/2022/08/Citypaylogo-x500.png" height="75"/>
      
 # Magento 2 Payment Module
 
