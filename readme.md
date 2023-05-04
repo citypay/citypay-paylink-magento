@@ -5,14 +5,14 @@
 
 CityPay Paylink Magento 2 Payment Module is a secure payment method in your Magento2 webshop. Integrating CityPay Paylink with Magento 2 is fast and easy.
 
-To make payments in your Magento 2 webshop, download the CityPay Paylink Magento 2 module here and you will be able to offer a vast variety of most 
+To make payments in your Magento 2 webshop, download the CityPay Paylink Magento 2 module here, and you will be able to offer a vast variety of most 
 frequently used national and international online payment methods and solutions for worldwide internet commerce.
 
 ## Installing CityPay Paylink Payment Module
 
-1. Change to directory where magento is installed (i.e cd /var/www/html/)
-1. Run `composer require citypay/magento-paylink`
-1. Ensure that the plugin is enabled (i.e using Magento CLI -> magento module:enable CityPay_Paylink)
+1. Change to directory where magento is installed (i.e. cd /var/www/html/)
+2. Run `composer require citypay/magento-paylink`
+3. Ensure that the plugin is enabled (i.e. using Magento CLI -> magento module:enable CityPay_Paylink)
 
 ## User Documentation
 
