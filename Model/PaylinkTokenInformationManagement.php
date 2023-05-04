@@ -321,8 +321,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $streets = $billingAddress->getStreet();#returns an array
         $cardholder = [
             'email' => $order->getCustomerEmail(),
-            'firstname' => $billingAddress->getFirstname(),
-            'lastname' => $billingAddress->getLastname(),
+            'firstName' => $billingAddress->getFirstname(),
+            'lastName' => $billingAddress->getLastname(),
             'address' => [
                 'address1' => count($streets) > 0 ? $streets[0] : null,
                 'address2' => count($streets) > 1 ? $streets[1] : null,
