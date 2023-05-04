@@ -45,33 +45,37 @@ The log file can be found at `{root}/var/log/debug.log` where root is normally `
 
 ### Checkout
 - Customer will be presented with the option to pay via CityPay Hosted Payment Form
-![checkout](https://user-images.githubusercontent.com/28923983/71171419-aa1fd980-2255-11ea-8818-dfe2a4b9f303.png)
 
-___
-<img width="908" alt="place_order" src="https://user-images.githubusercontent.com/28923983/71171423-aab87000-2255-11ea-995a-0e5dff49a19b.png">
+![checkout](https://user-images.githubusercontent.com/86474060/236212991-a2b591e5-54f4-49a9-9034-43ecf3263de8.png)
 
 ___
 ### Paylink Payment Form
 
 - Customer will be presented with the CityPay Paylink Form
-<img width="550" alt="paylink_form" src="https://user-images.githubusercontent.com/28923983/71171422-aab87000-2255-11ea-9871-666fd7b131f3.png">
+
+![paylink_form](https://user-images.githubusercontent.com/86474060/236213523-e4ae5ac1-778f-4f64-a3b8-64d333dbc7ba.png)
 
 ___
 
 ### Post Processing
 - Customer will be redirected back to Magento Store once they hit the *Return to Store* button
-<img width="618" alt="transaction_aproved" src="https://user-images.githubusercontent.com/28923983/71171427-ab510680-2255-11ea-84cb-42580326f569.png">
+
+![payment_result](https://user-images.githubusercontent.com/86474060/236214060-c0bfee76-0106-4fea-9700-11ff784397b2.png)
+___
+
+![store](https://user-images.githubusercontent.com/86474060/236214778-dc3a47d8-7189-4ee7-bc97-62fcc48f9eb8.png)
 
 ___
-<img width="1679" alt="success_page" src="https://user-images.githubusercontent.com/28923983/71171426-aab87000-2255-11ea-94b9-89f1d6a11eb9.png">
 
-___
 - Customers order summary will mention order status as *Processing*
-![customer_orders](https://user-images.githubusercontent.com/28923983/71171421-aab87000-2255-11ea-8a40-051f97758ad0.png)
+
+![customer_orders](https://user-images.githubusercontent.com/86474060/236218888-2af26320-366a-462c-a222-8db1e0b0f093.png)
 
 ___
+
 - Order details page will display CityPay Payment as the Payment Method
-![customer_order_details](https://user-images.githubusercontent.com/28923983/71171420-aa1fd980-2255-11ea-95df-15bc35d9cc35.png)
+
+![customer_order_details](https://user-images.githubusercontent.com/86474060/236219021-5e119273-243a-4eb6-bf19-f31450400206.png)
 
 ___
 
@@ -81,8 +85,10 @@ ___
 
 - Order will be set to Processing on the Merchant Backend Console and Merchant 
 will have the ability to view that the payment was made by the CityPay Payment Module.
-![admin_orders](https://user-images.githubusercontent.com/28923983/71171418-aa1fd980-2255-11ea-9406-048600dd39ff.png)
+
+![admin_orders](https://user-images.githubusercontent.com/86474060/236219156-2c94a576-9b8e-4bdb-9720-c8af0cf2f3ca.png)
 
 ___
 
-![admin_order_info](https://user-images.githubusercontent.com/28923983/71171416-aa1fd980-2255-11ea-83ec-4f2e64d8eb05.png)
+![admin_order_info](https://user-images.githubusercontent.com/86474060/236220049-3d1fe0c7-87a3-4dba-93ae-8c63c82702d6.png)
+
