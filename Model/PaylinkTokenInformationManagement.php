@@ -341,7 +341,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $requestData = [
             'test' => $testmode,
             'identifier' => $order->getData('increment_id'),
-            'amount' => (int)(str_replace('.', '', floatval($order->getData('grand_total')))), //'total_due'
+            'amount' => (int)number_format((float)$order->getData('grand_total'), 2, '', ''),
             'merchantId' => (int)$merchantid,
             'licenceKey' => $licencekey,
             'clientVersion' => $this->version . ' Magento-' . $this->productMetadata->getEdition() . ':' . $this->productMetadata->getVersion()
