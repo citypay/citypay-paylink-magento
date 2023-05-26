@@ -11,7 +11,6 @@
     <preference for="Psr\Log\LoggerInterface" type="Magento\Framework\Logger\Monolog"/>
     <preference for="CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2" type="CityPay\Paylink\Model\PaylinkTokenInformationManagement" />
     <preference for="\Magento\Checkout\Controller\Onepage\Success" type="\CityPay\Paylink\Controller\Onepage\Success"/>
-    <preference for="\Magento\Checkout\Controller\Onepage\Failure" type="\CityPay\Paylink\Controller\Onepage\Failure"/>
 
     <!-- Payment Method Facade configuration -->
     <virtualType name="CityPayPaymentGatewayFacade" type="Magento\Payment\Model\Method\Adapter">
