@@ -172,7 +172,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
     {
         $this->logger->debug('CityPay:Paylink:validatePostbackDigest');
 
-        $hash_src = $postback_data->authcode .
+        $authcode = property_exists($postback_data, 'authcode') ? $postback_data->authcode : "";
+        $hash_src = $authcode .
             $postback_data->amount .
             $postback_data->errorcode .
             $postback_data->merchantid .
@@ -249,7 +250,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
                 } else {
                     $this->logger->info('Order cancelled due to transaction not being authorised');
-                    $order->cancel();
+                    $orderState = Order::STATE_CANCELED;
+                    $order->setState($orderState)->setStatus($orderState);
                 }
                 $order->addCommentToStatusHistory(sprintf('<span>CityPay Paylink *%s* transaction |<br/> Result: %s |<br/> Card: %s |<br/> TransNo: %d |<br/> AuthCode: %s |<br/> AuthResult: %s |<br/> AVS: %s |<br/> CSC: %s |<br/> Status: %s </span>',
                     $postbackData->mode,
