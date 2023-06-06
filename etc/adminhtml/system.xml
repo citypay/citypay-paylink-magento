@@ -64,11 +64,11 @@
                 </field>
                 <field id="options" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>PayLink Options</label>
-                    <comment>See https://citypay.com/ps/api-documentation/paylinkv3/token-api-reference.html</comment>
+                    <comment>See https://citypay.github.io/api-docs/paylink/#config-fields</comment>
                 </field>
                 <field id="postback_policy" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>PayLink Postback Policy</label>
-                    <comment>See https://citypay.com/ps/api-documentation/paylinkv3/token-api-reference.html</comment>
+                    <comment>See https://citypay.github.io/api-docs/paylink/#postback-handling</comment>
                 </field>
                 <field id="postbackhost" translate="label" type="text" sortOrder="26" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Postback Host</label>
