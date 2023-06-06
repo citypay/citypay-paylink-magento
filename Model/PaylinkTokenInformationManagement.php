@@ -238,7 +238,9 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                 $order = $this->findOrder($identifier);
                 $payment = $order->getPayment(); #OrderPaymentInterface
 
-                if ($postbackData->authorised == 'true') {
+                $order_status = $order->getStatus();
+
+                if ($postbackData->authorised == 'true' && $order_status !== 'processing') {
                     $payment->registerAuthorizationNotification($amountAuthd);
                     # open for settlement, assigned to a batch or settled
                     $this->logger->info('Transaction authorised');
@@ -248,7 +250,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                         $payment->registerCaptureNotification($amountAuthd);
                     }
 
-                } else {
+                } else if ($order_status !== 'canceled') {
                     $this->logger->info('Order cancelled due to transaction not being authorised');
                     $orderState = Order::STATE_CANCELED;
                     $order->setState($orderState)->setStatus($orderState);
