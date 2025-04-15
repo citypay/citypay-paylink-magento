@@ -14,3 +14,9 @@ Used https://github.com/markshust/docker-magento to create the docker instances 
   * http://magento.test:1080/
 
 TODO: to add a volume to this plugin into the container.
+
+Ngrok: 
+* ngrok http https://magento.test
+
+Manually copying files/folders to the container e.g.
+* bin/copytocontainer app/code/CityPay/Paylink/Model   
