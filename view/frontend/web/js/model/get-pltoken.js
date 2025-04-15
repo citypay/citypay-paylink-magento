@@ -18,24 +18,45 @@ define(
         return function (serviceUrl, payload, messageContainer) {
             fullScreenLoader.startLoader();
 
-            return storage.post(
-                serviceUrl, JSON.stringify(payload)
-            ).fail(
-                function (response) {
-                    errorProcessor.process(response, messageContainer);
-                }
-            ).success(
-                function (response) {
-                    let jresponse=JSON.parse(response);
-                    if (jresponse.result==1){
-                        window.location.replace(jresponse.url);
-                    }
-                }
-            ).always(
-                function () {
-                    fullScreenLoader.stopLoader();
-                }
+            var request = storage.post(
+                serviceUrl,
+                JSON.stringify(payload)
             );
+
+            // Use the appropriate method based on what's supported
+            if (typeof request.done === 'function') {
+                request
+                    .done(function (response) {
+                        handleResponse(response);
+                    })
+                    .fail(function (response) {
+                        errorProcessor.process(response, messageContainer);
+                    })
+                    .always(function () {
+                        fullScreenLoader.stopLoader();
+                    });
+            } else if (typeof request.success === 'function') {
+                request
+                    .success(function (response) {
+                        handleResponse(response);
+                    })
+                    .fail(function (response) {
+                        errorProcessor.process(response, messageContainer);
+                    })
+                    .always(function () {
+                        fullScreenLoader.stopLoader();
+                    });
+            }
+
+            function handleResponse(response) {
+                let jResponse = JSON.parse(response);
+
+                if (jResponse.result === 1 && jResponse.url) {
+                    window.location.replace(jResponse.url);
+                }
+            }
+
+            return request;
         };
     }
 );
