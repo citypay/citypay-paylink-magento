@@ -217,7 +217,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      */
     public function processPaylinkPostback()
     {
-
         $this->logger->debug('CityPay:Paylink:processPaylinkPostback Start');
         try {
 
@@ -248,6 +247,20 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                     if ($postbackData->status == 'O' || $postbackData->status == 'A' || $postbackData->status == 'S') {
                         $this->logger->info('Transaction captured');
                         $payment->registerCaptureNotification($amountAuthd);
+                    }
+
+                    if (in_array($order->getStatus(), ['fraud', 'pending_payment'])) {
+                        $order->setState(\Magento\Sales\Model\Order::STATE_PROCESSING)
+                            ->setStatus(\Magento\Sales\Model\Order::STATE_PROCESSING);
+                        $this->logger->info('Order status set to processing after successful payment.');
+                    }
+
+                    // Sends email if it has not already been sent
+                    if (!$order->getEmailSent()) {
+                        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+                        $orderSender = $objectManager->create(\Magento\Sales\Model\Order\Email\Sender\OrderSender::class);
+                        $orderSender->send($order);
+                        $this->logger->info('Email sent with payment confirmation');
                     }
 
                 } else if ($order_status !== 'canceled') {
@@ -359,7 +372,9 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $requestData['config'] = $configData;
         $requestData['cardholder'] = $cardholder;
         $order->setStatus(Order::STATE_PENDING_PAYMENT);
-        #save the order.....
+
+        $order->setCanSendNewEmailFlag(false); // ← Prevent Magento from emailing yet
+
         $order->save();
 
         return $requestData;
