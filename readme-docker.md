@@ -3,7 +3,7 @@
 Used https://github.com/markshust/docker-magento to create the docker instances needed.
 
 ## Steps
-* run script setup.sh ./setup.sh inside the plugin folder.
+* run script setup.sh inside the plugin folder.
 * magento endpoints
   * https://magento.test/
   * https://magento.test/admin
@@ -13,10 +13,8 @@ Used https://github.com/markshust/docker-magento to create the docker instances 
 * Two factor authentication email in
   * http://magento.test:1080/
 
-TODO: to add a volume to this plugin into the container.
-
 Ngrok: 
 * ngrok http https://magento.test
 
 Manually copying files/folders to the container e.g.
-* bin/copytocontainer app/code/CityPay/Paylink/Model   
+* bin/copytocontainer app/code/CityPay/Paylink/Model
