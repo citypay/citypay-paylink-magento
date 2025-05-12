@@ -373,7 +373,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
         // obtain the order
         $order = $this->orderRepository->get($orderId);
-        $order->setCanSendNewEmailFlag(false); // ← Prevent Magento from emailing yet
+        $order->setCanSendNewEmailFlag(false); // Prevent Magento from emailing yet
 
         $billingAddress = $order->getBillingAddress();
 
