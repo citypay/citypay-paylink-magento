@@ -12,8 +12,8 @@
     </event>
     <!--event name="sales_order_payment_place_start">
         <observer name="paylink_order_placement_observer_start" instance="CityPay\Paylink\Observer\OrderPlacementStartObserver" />
-    </event>
+    </event-->
     <event name="sales_order_payment_place_end">
         <observer name="paylink_order_placement_observer_end" instance="CityPay\Paylink\Observer\OrderPlacementEndObserver" />
-    </event-->
+    </event>
 </config>
