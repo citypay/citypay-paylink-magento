@@ -249,18 +249,85 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                         $payment->registerCaptureNotification($amountAuthd);
                     }
 
+                    // Handle suspected fraud promotion. This ensures your order flow transitions appropriately after a successful payment
                     if (in_array($order->getStatus(), ['fraud', 'pending_payment'])) {
                         $order->setState(\Magento\Sales\Model\Order::STATE_PROCESSING)
                             ->setStatus(\Magento\Sales\Model\Order::STATE_PROCESSING);
                         $this->logger->info('Order status set to processing after successful payment.');
                     }
 
-                    // Sends email if it has not already been sent
                     if (!$order->getEmailSent()) {
-                        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-                        $orderSender = $objectManager->create(\Magento\Sales\Model\Order\Email\Sender\OrderSender::class);
-                        $orderSender->send($order);
-                        $this->logger->info('Email sent with payment confirmation');
+                        $this->logger->debug('Store ID: ' . $order->getStoreId());
+                        $this->logger->debug(
+                            'Template ID: '
+                            . $this->scopeConfig->getValue(
+                                'sales_email/order/template',
+                                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                                $order->getStoreId()
+                            )
+                        );
+
+                        /** @var \Magento\Sales\Model\Order\Email\Sender\OrderSender $orderSender */
+                        $orderSender = \Magento\Framework\App\ObjectManager::getInstance()
+                            ->create(\Magento\Sales\Model\Order\Email\Sender\OrderSender::class);
+
+                        // force Magento to allow sending regardless of Stores→Sales Emails→Enabled
+                        $order->setCanSendNewEmailFlag(true);
+
+                        // clear any stale “already sent” marker
+                        $order->setEmailSent(false);
+
+                        $this->logger->debug('sales_email/order/enabled = '
+                            . $this->scopeConfig->getValue(
+                                'sales_email/order/enabled',
+                                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                                $order->getStoreId()
+                            )
+                        );
+
+                        // The “force send” flag value:
+                        $this->logger->debug('canSendNewEmailFlag = '
+                            . ($order->getCanSendNewEmailFlag() ? 'true' : 'false')
+                        );
+
+                        // The “already sent” flag:
+                        $this->logger->debug('emailSent = '
+                            . ($order->getEmailSent() ? 'true' : 'false')
+                        );
+
+                        // The async setting:
+                        $this->logger->debug('sales_email/order/asynchronous_sending = '
+                            . $this->scopeConfig->getValue(
+                                'sales_email/order/asynchronous_sending',
+                                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                                $order->getStoreId()
+                            )
+                        );
+
+                        $this->logger->debug('customer_email = ' . $order->getCustomerEmail());
+
+
+                        // force a synchronous sending (bypass async/cron entirely)
+                        try {
+                            $sent = $orderSender->send($order,true);
+                            if ($sent) {
+                                $this->logger->info(
+                                    'Order confirmation email SENT for order '
+                                    . $order->getIncrementId()
+                                );
+                            } else {
+                                $this->logger->warning(
+                                    'OrderSender::send() returned FALSE for order '
+                                    . $order->getIncrementId()
+                                );
+                            }
+                        } catch (\Throwable $e) {
+                            $this->logger->error(
+                                'Exception while sending order email for #'
+                                . $order->getIncrementId()
+                                . ': ' . $e->getMessage()
+                            );
+                        }
                     }
 
                 } else if ($order_status !== 'canceled') {
@@ -306,6 +373,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
         // obtain the order
         $order = $this->orderRepository->get($orderId);
+        $order->setCanSendNewEmailFlag(false); // Prevent Magento from emailing yet
 
         $billingAddress = $order->getBillingAddress();
 
@@ -372,8 +440,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         $requestData['config'] = $configData;
         $requestData['cardholder'] = $cardholder;
         $order->setStatus(Order::STATE_PENDING_PAYMENT);
-
-        $order->setCanSendNewEmailFlag(false); // ← Prevent Magento from emailing yet
 
         $order->save();
 

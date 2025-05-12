@@ -43,40 +43,12 @@ class OrderPlacementEndObserver implements  ObserverInterface  //extends Abstrac
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
         $this->logger->debug('OrderPlacementEndObserver execute');
+        /** @var \Magento\Sales\Model\Order $order */
+        $payment = $observer->getEvent()->getPayment();
+        $order   = $payment->getOrder();
 
-        try {
-            $ev = $observer->getEvent();
-            $payment = $ev->getPayment();
-            $request = $this->buildRequestData($payment);
-            $transfer = $this->create($request);
-            $response = $this->placeRequest($transfer);
-        }
-        catch (Exception $ex){
-            $this->logger->error($ex->getMessage());
-        }
-        /*
-        $data=$payment->getData();
-
-        $data['additional_information']['method_title']; //"CityPay Hosted Payment Page"
-        $methodInstance=$payment->getMethodInstance();
-        $paymentInfo = $methodInstance->getInfoInstance();
-        $order->$payment->getOrder();
-        $order->getStatus();
-        */
-        //$this->logger->debug('OrderPlacementObserver event'+$ev);
-/*
-        $method = $this->readMethodArgument($observer);
-        $data = $this->readDataArgument($observer);
-
-        $paymentInfo = $method->getInfoInstance();
-
-        if ($data->getDataByKey('transaction_result') !== null) {
-            $paymentInfo->setAdditionalInformation(
-                'transaction_result',
-                $data->getDataByKey('transaction_result')
-            );
-        }
-        */
+        // Prevent Magento from sending the "New Order" email at order placement
+        $order->setCanSendNewEmailFlag(false);
     }
 
 }
