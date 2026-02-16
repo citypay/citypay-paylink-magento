@@ -12,6 +12,12 @@ source .env
 : "${CITYPAY_PLUGIN_DIR:=.}"
 : "${ENABLE_NGROK:=1}"
 : "${INSTALL_SAMPLE_DATA:=1}"   # <-- NEW: 1=install sample data; 0=skip
+: "${ENABLE_HYVA_SETUP:=0}"     # 1=configure Hyva Private Packagist auth/repo
+: "${HYVA_PRIVATE_PACKAGIST_URL:=}"
+: "${HYVA_PRIVATE_PACKAGIST_TOKEN:=}"
+: "${INSTALL_HYVA_THEME:=0}"    # 1=install Hyva theme package
+: "${HYVA_THEME_PACKAGE:=hyva-themes/magento2-default-theme}"
+: "${APPLY_HYVA_THEME:=1}"      # 1=set design/theme/theme_id to Hyva/default
 : "${FOLLOW_LOGS:=1}"           # 1=tail docker logs after init, 0=exit immediately
 : "${LOG_SERVICES:=nginx app}"  # space-separated docker compose services
 : "${NGROK_AUTHTOKEN:=}"
@@ -114,7 +120,25 @@ echo "⏳ wait for MySQL (db:3306)..."
 until docker compose exec -T db mysqladmin ping -h"db" --silent; do sleep 2; done
 
 echo "⏳ wait for OpenSearch (host:9200)..."
-until curl -sf http://localhost:9200 >/dev/null; do sleep 3; done
+OS_WAIT_SEC="${OPENSEARCH_WAIT_SEC:-180}"
+OS_START_TS="$(date +%s)"
+while true; do
+  if docker compose ps --status running opensearch | grep -q opensearch; then
+    OS_STATUS="$(curl -sf "http://localhost:9200/_cluster/health" 2>/dev/null | sed -n 's/.*"status":"\([^"]*\)".*/\1/p' | head -n1 || true)"
+    if [ "${OS_STATUS}" = "green" ] || [ "${OS_STATUS}" = "yellow" ]; then
+      echo "✅ OpenSearch ready (status=${OS_STATUS})"
+      break
+    fi
+  fi
+
+  if [ $(( $(date +%s) - OS_START_TS )) -ge "${OS_WAIT_SEC}" ]; then
+    echo "❌ OpenSearch did not become ready within ${OS_WAIT_SEC}s."
+    docker compose ps
+    docker compose logs --tail=80 opensearch || true
+    exit 1
+  fi
+  sleep 3
+done
 
 echo "▶ composer create-project (as www-data)..."
 docker compose exec -T -u www-data app bash -lc '
@@ -142,6 +166,53 @@ docker compose exec -T -u www-data app bash -lc '
     rm -rf _new
   fi
 '
+
+if [ "${ENABLE_HYVA_SETUP}" = "1" ]; then
+  echo "▶ configuring Hyva Private Packagist in composer..."
+  docker compose exec -T -u www-data \
+    -e HYVA_PRIVATE_PACKAGIST_URL="${HYVA_PRIVATE_PACKAGIST_URL}" \
+    -e HYVA_PRIVATE_PACKAGIST_TOKEN="${HYVA_PRIVATE_PACKAGIST_TOKEN}" \
+    app bash -lc '
+      set -e
+      cd /var/www/html
+      if [ -z "$HYVA_PRIVATE_PACKAGIST_URL" ] || [ -z "$HYVA_PRIVATE_PACKAGIST_TOKEN" ]; then
+        echo "⚠️  HYVA_PRIVATE_PACKAGIST_URL or HYVA_PRIVATE_PACKAGIST_TOKEN is empty; skipping Hyva composer setup."
+        exit 0
+      fi
+      if [ "$HYVA_PRIVATE_PACKAGIST_TOKEN" = "******" ]; then
+        echo "❌ HYVA_PRIVATE_PACKAGIST_TOKEN is still placeholder value (******). Put the real token in .env."
+        exit 1
+      fi
+      composer config repositories.private-packagist composer "$HYVA_PRIVATE_PACKAGIST_URL"
+      composer config --auth http-basic.hyva-themes.repo.packagist.com token "$HYVA_PRIVATE_PACKAGIST_TOKEN"
+    '
+else
+  echo "▶ skipping Hyva composer setup (ENABLE_HYVA_SETUP!=1)"
+fi
+
+if [ "${INSTALL_HYVA_THEME}" = "1" ]; then
+  echo "▶ installing Hyva theme package (${HYVA_THEME_PACKAGE})..."
+  docker compose exec -T -u www-data \
+    -e HYVA_THEME_PACKAGE="${HYVA_THEME_PACKAGE}" \
+    -e MAGENTO_PUBLIC_KEY="${MAGENTO_PUBLIC_KEY}" \
+    -e MAGENTO_PRIVATE_KEY="${MAGENTO_PRIVATE_KEY}" \
+    app bash -lc '
+      set -e
+      cd /var/www/html
+      if [ -z "$MAGENTO_PUBLIC_KEY" ] || [ -z "$MAGENTO_PRIVATE_KEY" ]; then
+        echo "❌ MAGENTO_PUBLIC_KEY or MAGENTO_PRIVATE_KEY is empty; cannot install Hyva package."
+        exit 1
+      fi
+      composer config --global http-basic.repo.magento.com "$MAGENTO_PUBLIC_KEY" "$MAGENTO_PRIVATE_KEY"
+      if composer show "$HYVA_THEME_PACKAGE" >/dev/null 2>&1; then
+        echo "Hyva package already installed: $HYVA_THEME_PACKAGE"
+      else
+        composer require "$HYVA_THEME_PACKAGE"
+      fi
+    '
+else
+  echo "▶ skipping Hyva package install (INSTALL_HYVA_THEME!=1)"
+fi
 
 echo "🛠  ensure DB & user exist (MySQL 8 syntax)..."
 docker compose exec -T db sh -lc '
@@ -215,6 +286,11 @@ else
 fi
 # ---------------------------------------------------------------------------
 
+if [ \"${INSTALL_HYVA_THEME}\" = \"1\" ]; then
+  echo '▶ running setup:upgrade for Hyva modules...'
+  php bin/magento setup:upgrade --keep-generated
+fi
+
 # developer mode static strategy:
 # do not run static-content:deploy, so static assets are generated/symlinked dynamically.
 rm -rf var/view_preprocessed/*
@@ -258,6 +334,38 @@ if [ "${ENABLE_NGROK:-0}" = "1" ]; then
   else
     echo "⏭️  Could not capture ngrok URL right now; leaving Magento at BASE_URL."
   fi
+fi
+
+if [ "${INSTALL_HYVA_THEME}" = "1" ] && [ "${APPLY_HYVA_THEME}" = "1" ]; then
+  echo "▶ applying Hyva/default as storefront theme..."
+  HYVA_THEME_ID="$(
+    docker compose exec -T db sh -lc \
+      'mysql -uroot -proot -NBe "SELECT theme_id FROM magento.theme WHERE theme_path=\"Hyva/default\" ORDER BY theme_id DESC LIMIT 1;"' \
+      | tr -d '\r'
+  )"
+  if [ -n "${HYVA_THEME_ID}" ]; then
+    docker compose exec -T -u www-data app bash -lc "
+      set -e
+      cd /var/www/html
+      php bin/magento config:set design/theme/theme_id '${HYVA_THEME_ID}'
+      php bin/magento cache:flush
+    "
+    echo "✅ Hyva/default applied (theme_id=${HYVA_THEME_ID})."
+  else
+    echo "⚠️  Could not find Hyva/default in DB theme table. Leaving current theme unchanged."
+  fi
+fi
+
+if [ "${INSTALL_HYVA_THEME}" = "1" ]; then
+  echo "▶ enabling Hyva Luma Checkout fallback configuration..."
+  docker compose exec -T -u www-data app bash -lc "
+    set -e
+    cd /var/www/html
+    php bin/magento config:set hyva_theme_fallback/general/enable 1
+    php bin/magento config:set hyva_theme_fallback/general/theme_full_path frontend/Magento/luma
+  "
+  docker compose exec -T -u www-data app bash -lc 'cd /var/www/html && php -r '\''require "app/bootstrap.php"; $bootstrap=\Magento\Framework\App\Bootstrap::create(BP, $_SERVER); $om=$bootstrap->getObjectManager(); $writer=$om->create(\Magento\Framework\App\Config\Storage\WriterInterface::class); $writer->save("hyva_theme_fallback/general/list_part_of_url", "[{\"path\":\"checkout\"},{\"path\":\"checkout/index\"},{\"path\":\"paypal/express/review\"},{\"path\":\"paypal/express/saveShippingMethod\"}]");'\'''
+  docker compose exec -T -u www-data app bash -lc 'cd /var/www/html && php bin/magento cache:flush'
 fi
 
 PUBLIC_URL="${PUBLIC_URL:-${BASE_URL%/}/}"
