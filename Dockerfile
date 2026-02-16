@@ -31,6 +31,8 @@ RUN { \
   echo "upload_max_filesize=64M"; \
   echo "post_max_size=64M"; \
   echo "max_execution_time=1800"; \
+  echo "opcache.validate_timestamps=1"; \
+  echo "opcache.revalidate_freq=0"; \
 } > /usr/local/etc/php/conf.d/magento.ini
 
 CMD ["php-fpm"]

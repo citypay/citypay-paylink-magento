@@ -9,13 +9,27 @@ fi
 source .env
 
 # Defaults (safe with `set -u`)
+: "${CITYPAY_PLUGIN_DIR:=.}"
 : "${ENABLE_NGROK:=1}"
 : "${INSTALL_SAMPLE_DATA:=1}"   # <-- NEW: 1=install sample data; 0=skip
+: "${FOLLOW_LOGS:=1}"           # 1=tail docker logs after init, 0=exit immediately
+: "${LOG_SERVICES:=nginx app}"  # space-separated docker compose services
 : "${NGROK_AUTHTOKEN:=}"
 : "${NGROK_DOMAIN:=}"
 : "${MAGENTO_HTTP_PORT:=8081}"   # nginx host port
 : "${NGROK_URL:=}"
 : "${NGROK_HOST:=}"
+
+if [ ! -d "${CITYPAY_PLUGIN_DIR}" ]; then
+  echo "❌ CITYPAY_PLUGIN_DIR does not exist: ${CITYPAY_PLUGIN_DIR}"
+  exit 1
+fi
+if [ ! -f "${CITYPAY_PLUGIN_DIR}/registration.php" ]; then
+  echo "⚠️  CITYPAY_PLUGIN_DIR does not look like a Magento module root: ${CITYPAY_PLUGIN_DIR}"
+  echo "   Expected file not found: ${CITYPAY_PLUGIN_DIR}/registration.php"
+fi
+export CITYPAY_PLUGIN_DIR
+echo "▶ CityPay plugin path: ${CITYPAY_PLUGIN_DIR}"
 
 # Starts ngrok and returns immediately. If NGROK_DOMAIN is set, we export the URL right away.
 get_ngrok_url() {
@@ -183,7 +197,8 @@ php bin/magento deploy:mode:set developer -s
 php bin/magento module:disable Magento_TwoFactorAuth Magento_AdminAdobeImsTwoFactorAuth || true
 php bin/magento config:set web/secure/use_in_frontend 0
 php bin/magento config:set web/secure/use_in_adminhtml 0
-php bin/magento config:set dev/static/sign 0
+php bin/magento config:set dev/static/sign 1
+php bin/magento config:set dev/template/allow_symlink 1
 
 # --- SAMPLE DATA (optional) --------------------------------------------------
 if [ \"${INSTALL_SAMPLE_DATA}\" = \"1\" ]; then
@@ -200,39 +215,27 @@ else
 fi
 # ---------------------------------------------------------------------------
 
-# build static so nginx serves from disk
-rm -rf var/view_preprocessed/*; find pub/static -mindepth 1 -maxdepth 1 ! -name '.htaccess' -exec rm -rf {} +
-php -dmemory_limit=2G bin/magento setup:static-content:deploy -f --strategy=compact --area adminhtml --theme Magento/backend en_US en_GB
-php -dmemory_limit=2G bin/magento setup:static-content:deploy -f --strategy=compact --area frontend  --theme Magento/luma    en_US en_GB
-php bin/magento cache:flush
-"
+# developer mode static strategy:
+# do not run static-content:deploy, so static assets are generated/symlinked dynamically.
+rm -rf var/view_preprocessed/*
+find pub/static -mindepth 1 -maxdepth 1 ! -name '.htaccess' -exec rm -rf {} +
+php bin/magento cache:clean
 
-#echo "▶ CityPay_Paylink: enable if present…"
-#docker compose exec -T -u www-data app bash -lc '
-#set -e
-#cd /var/www/html
-#
-#if [ -d app/code/CityPay/Paylink ]; then
-#  if ! bin/magento module:status CityPay_Paylink 2>/dev/null | grep -q "Module is enabled"; then
-#    echo "Enabling CityPay_Paylink…"
-#    bin/magento module:enable CityPay_Paylink
-#    bin/magento setup:upgrade
-#
-#    rm -rf var/view_preprocessed/*; find pub/static -mindepth 1 -maxdepth 1 ! -name ".htaccess" -exec rm -rf {} +
-#    php -dmemory_limit=2G bin/magento setup:static-content:deploy -f --strategy=compact \
-#      --area adminhtml --theme Magento/backend en_US en_GB
-#    php -dmemory_limit=2G bin/magento setup:static-content:deploy -f --strategy=compact \
-#      --area frontend  --theme Magento/luma    en_US en_GB
-#  else
-#    echo "CityPay_Paylink already enabled; running setup:upgrade + cache:flush…"
-#    bin/magento setup:upgrade
-#  fi
-#
-#  bin/magento cache:flush
-#else
-#  echo "⚠️ app/code/CityPay/Paylink not found; skipping."
-#fi
-#'
+if [ -d app/code/CityPay/Paylink ]; then
+  if php bin/magento module:status CityPay_Paylink 2>/dev/null | grep -q 'Module is enabled'; then
+    echo 'CityPay_Paylink already enabled.'
+  else
+    echo '▶ enabling CityPay_Paylink...'
+    php bin/magento module:enable CityPay_Paylink
+  fi
+
+  echo '▶ applying CityPay_Paylink setup updates...'
+  php bin/magento setup:upgrade --keep-generated
+  php bin/magento cache:flush
+else
+  echo '⚠️ app/code/CityPay/Paylink not found; skipping CityPay_Paylink enable.'
+fi
+"
 
 # --- NGROK (optional) --------------------------------------------------------
 if [ "${ENABLE_NGROK:-0}" = "1" ]; then
@@ -259,4 +262,13 @@ fi
 
 PUBLIC_URL="${PUBLIC_URL:-${BASE_URL%/}/}"
 echo "✅ Done. Store: ${PUBLIC_URL} | Admin: ${PUBLIC_URL}admin (user: ${ADMIN_USER} / pass: ${ADMIN_PASS})"
+
+if [ "${FOLLOW_LOGS}" = "1" ]; then
+  echo "▶ streaming logs (Ctrl+C to stop viewing logs; containers keep running)..."
+  # shellcheck disable=SC2086
+  docker compose logs -f --tail=200 ${LOG_SERVICES}
+else
+  echo "ℹ️  Logs are not attached (FOLLOW_LOGS=${FOLLOW_LOGS})."
+  echo "   Run manually: docker compose logs -f --tail=200 ${LOG_SERVICES}"
+fi
 # ---------------------------------------------------------------------------
