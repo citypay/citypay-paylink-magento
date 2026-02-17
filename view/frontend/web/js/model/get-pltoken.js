@@ -49,11 +49,29 @@ define(
             }
 
             function handleResponse(response) {
-                let jResponse = JSON.parse(response);
+                var parsedResponse = response;
 
-                if (jResponse.result === 1 && jResponse.url) {
-                    window.location.replace(jResponse.url);
+                if (typeof response === 'string') {
+                    try {
+                        parsedResponse = JSON.parse(response);
+                    } catch (e) {
+                        messageContainer.addErrorMessage({
+                            message: 'CityPay could not create a payment token. Please review billing details and try again.'
+                        });
+                        return;
+                    }
                 }
+
+                if (parsedResponse && parsedResponse.result === 1 && parsedResponse.url) {
+                    window.location.replace(parsedResponse.url);
+                    return;
+                }
+
+                messageContainer.addErrorMessage({
+                    message: (parsedResponse && parsedResponse.error)
+                        ? parsedResponse.error
+                        : 'CityPay could not create a payment token. Please review billing details and try again.'
+                });
             }
 
             return request;

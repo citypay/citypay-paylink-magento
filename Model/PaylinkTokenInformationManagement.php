@@ -10,7 +10,6 @@ use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Webapi\Rest\Request as RestRequest;
 use Magento\Payment\Gateway\Http\TransferInterface;
 use Magento\Sales\Model\Order;
-use mysql_xdevapi\Exception;
 
 /**
  * Payment information management
@@ -154,12 +153,56 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             $request = $this->buildPaylinkRequest($payment);
             $transfer = $this->createHttpRequest($request);
             $response = $this->processHttp($transfer);
-            return $response;
-        } catch (Exception $ex) {
+
+            if ($this->isSuccessfulPaylinkResponse($response)) {
+                return $response;
+            }
+
+            // Some payloads may be rejected by upstream with a plain "Internal Server Error".
+            // Retry once with a minimal payload to keep checkout flow resilient.
+            $this->logger->warning(
+                'CityPay:Paylink:getPaylinkToken first attempt failed, retrying with minimal payload',
+                ['response' => $response]
+            );
+
+            $retryRequest = $request;
+            unset($retryRequest['cardholder']);
+
+            $retryTransfer = $this->createHttpRequest($retryRequest);
+            $retryResponse = $this->processHttp($retryTransfer);
+            if ($this->isSuccessfulPaylinkResponse($retryResponse)) {
+                return $retryResponse;
+            }
+
+            return json_encode([
+                'result' => 0,
+                'error' => 'Unable to create CityPay Paylink token',
+                'upstream_response' => (string) $retryResponse
+            ]);
+        } catch (\Throwable $ex) {
             $this->logger->error('CityPay:Paylink:getPaylinkToken:' . $ex->getMessage());
+            return json_encode([
+                'result' => 0,
+                'error' => 'Unexpected exception creating Paylink token',
+                'details' => $ex->getMessage()
+            ]);
         } finally {
             $this->logger->debug('CityPay:Paylink:getPaylinkToken End');
         }
+    }
+
+    private function isSuccessfulPaylinkResponse($response): bool
+    {
+        if (!is_string($response) || $response === '') {
+            return false;
+        }
+
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded)) {
+            return false;
+        }
+
+        return ((int)($decoded['result'] ?? 0) === 1) && !empty($decoded['url']);
     }
 
 
@@ -366,10 +409,49 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
     public function buildPaylinkRequest($payment)
     {
-        // obtain the order id
+        // Obtain order id from checkout-specific additional_data when available
+        // and fallback to session-aware values for Hyva React checkout flow.
         $ad = $payment->getAdditionalData();
+        if (is_string($ad) && $ad !== '') {
+            $decodedAdditionalData = json_decode($ad, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $ad = $decodedAdditionalData;
+            }
+        }
         $this->logger->debug('CityPay:Paylink:buildRequestData:ad ' . json_encode($ad));
-        $orderId = $ad['orderId'];
+
+        $orderId = null;
+        if (is_array($ad) && isset($ad['orderId']) && (int) $ad['orderId'] > 0) {
+            $orderId = (int) $ad['orderId'];
+        }
+
+        if (!$orderId && method_exists($payment, 'getOrderId')) {
+            $candidateOrderId = (int) $payment->getOrderId();
+            if ($candidateOrderId > 0) {
+                $orderId = $candidateOrderId;
+            }
+        }
+
+        if (!$orderId && method_exists($payment, 'getOrder')) {
+            $orderObject = $payment->getOrder();
+            if ($orderObject && method_exists($orderObject, 'getEntityId')) {
+                $candidateOrderId = (int) $orderObject->getEntityId();
+                if ($candidateOrderId > 0) {
+                    $orderId = $candidateOrderId;
+                }
+            }
+        }
+
+        if (!$orderId) {
+            $sessionOrderId = (int) $this->checkoutSession->getLastOrderId();
+            if ($sessionOrderId > 0) {
+                $orderId = $sessionOrderId;
+            }
+        }
+
+        if (!$orderId) {
+            throw new CouldNotSaveException(__('Unable to determine order for CityPay token generation.'));
+        }
 
         // obtain the order
         $order = $this->orderRepository->get($orderId);

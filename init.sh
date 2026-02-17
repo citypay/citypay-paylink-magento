@@ -17,7 +17,9 @@ source .env
 : "${HYVA_PRIVATE_PACKAGIST_TOKEN:=}"
 : "${INSTALL_HYVA_THEME:=0}"    # 1=install Hyva theme package
 : "${HYVA_THEME_PACKAGE:=hyva-themes/magento2-default-theme}"
+: "${HYVA_REACT_CHECKOUT_PACKAGE:=hyva-themes/magento2-react-checkout}"
 : "${APPLY_HYVA_THEME:=1}"      # 1=set design/theme/theme_id to Hyva/default
+: "${CHECKOUT_MODE:=luma_fallback}"  # luma_fallback | hyva_react
 : "${FOLLOW_LOGS:=1}"           # 1=tail docker logs after init, 0=exit immediately
 : "${LOG_SERVICES:=nginx app}"  # space-separated docker compose services
 : "${NGROK_AUTHTOKEN:=}"
@@ -194,6 +196,8 @@ if [ "${INSTALL_HYVA_THEME}" = "1" ]; then
   echo "▶ installing Hyva theme package (${HYVA_THEME_PACKAGE})..."
   docker compose exec -T -u www-data \
     -e HYVA_THEME_PACKAGE="${HYVA_THEME_PACKAGE}" \
+    -e CHECKOUT_MODE="${CHECKOUT_MODE}" \
+    -e HYVA_REACT_CHECKOUT_PACKAGE="${HYVA_REACT_CHECKOUT_PACKAGE}" \
     -e MAGENTO_PUBLIC_KEY="${MAGENTO_PUBLIC_KEY}" \
     -e MAGENTO_PRIVATE_KEY="${MAGENTO_PRIVATE_KEY}" \
     app bash -lc '
@@ -208,6 +212,14 @@ if [ "${INSTALL_HYVA_THEME}" = "1" ]; then
         echo "Hyva package already installed: $HYVA_THEME_PACKAGE"
       else
         composer require "$HYVA_THEME_PACKAGE"
+      fi
+
+      if [ "$CHECKOUT_MODE" = "hyva_react" ]; then
+        if composer show "$HYVA_REACT_CHECKOUT_PACKAGE" >/dev/null 2>&1; then
+          echo "Hyva React checkout package already installed: $HYVA_REACT_CHECKOUT_PACKAGE"
+        else
+          composer require "$HYVA_REACT_CHECKOUT_PACKAGE"
+        fi
       fi
     '
 else
@@ -357,15 +369,27 @@ if [ "${INSTALL_HYVA_THEME}" = "1" ] && [ "${APPLY_HYVA_THEME}" = "1" ]; then
 fi
 
 if [ "${INSTALL_HYVA_THEME}" = "1" ]; then
-  echo "▶ enabling Hyva Luma Checkout fallback configuration..."
-  docker compose exec -T -u www-data app bash -lc "
-    set -e
-    cd /var/www/html
-    php bin/magento config:set hyva_theme_fallback/general/enable 1
-    php bin/magento config:set hyva_theme_fallback/general/theme_full_path frontend/Magento/luma
-  "
-  docker compose exec -T -u www-data app bash -lc 'cd /var/www/html && php -r '\''require "app/bootstrap.php"; $bootstrap=\Magento\Framework\App\Bootstrap::create(BP, $_SERVER); $om=$bootstrap->getObjectManager(); $writer=$om->create(\Magento\Framework\App\Config\Storage\WriterInterface::class); $writer->save("hyva_theme_fallback/general/list_part_of_url", "[{\"path\":\"checkout\"},{\"path\":\"checkout/index\"},{\"path\":\"paypal/express/review\"},{\"path\":\"paypal/express/saveShippingMethod\"}]");'\'''
-  docker compose exec -T -u www-data app bash -lc 'cd /var/www/html && php bin/magento cache:flush'
+  if [ "${CHECKOUT_MODE}" = "hyva_react" ]; then
+    echo "▶ enabling Hyva React Checkout and disabling Luma fallback..."
+    docker compose exec -T -u www-data app bash -lc "
+      set -e
+      cd /var/www/html
+      php bin/magento config:set hyva_react_checkout/general/enable 1
+      php bin/magento config:set hyva_theme_fallback/general/enable 0
+      php bin/magento cache:flush
+    "
+  else
+    echo "▶ enabling Hyva Luma Checkout fallback configuration..."
+    docker compose exec -T -u www-data app bash -lc "
+      set -e
+      cd /var/www/html
+      php bin/magento config:set hyva_react_checkout/general/enable 0
+      php bin/magento config:set hyva_theme_fallback/general/enable 1
+      php bin/magento config:set hyva_theme_fallback/general/theme_full_path frontend/Magento/luma
+    "
+    docker compose exec -T -u www-data app bash -lc 'cd /var/www/html && php -r '\''require "app/bootstrap.php"; $bootstrap=\Magento\Framework\App\Bootstrap::create(BP, $_SERVER); $om=$bootstrap->getObjectManager(); $writer=$om->create(\Magento\Framework\App\Config\Storage\WriterInterface::class); $writer->save("hyva_theme_fallback/general/list_part_of_url", "[{\"path\":\"checkout\"},{\"path\":\"checkout/index\"},{\"path\":\"paypal/express/review\"},{\"path\":\"paypal/express/saveShippingMethod\"}]");'\'''
+    docker compose exec -T -u www-data app bash -lc 'cd /var/www/html && php bin/magento cache:flush'
+  fi
 fi
 
 PUBLIC_URL="${PUBLIC_URL:-${BASE_URL%/}/}"

@@ -20,4 +20,8 @@
             </argument>
         </arguments>
     </type>
+
+    <type name="CityPay\Paylink\Controller\Onepage\Success">
+        <plugin name="citypay_hyva_success_redirect" type="CityPay\Paylink\Plugin\Checkout\SuccessRedirectPlugin" sortOrder="10"/>
+    </type>
 </config>
