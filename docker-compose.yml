@@ -1,6 +1,6 @@
 services:
   app:
-    platform: linux/arm64
+    platform: ${DOCKER_PLATFORM:-linux/arm64}
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,7 +10,7 @@ services:
       PHP_MEMORY_LIMIT: "2048M"
     volumes:
       - ../magento-install/src:/var/www/html
-      - ${CITYPAY_PLUGIN_DIR}:/var/www/html/app/code/CityPay/Paylink:rw
+      - ${CITYPAY_PLUGIN_DIR}:/var/www/html/app/code/CityPay/Paylink
     networks: [magento-net]
     depends_on:
       - db
@@ -20,13 +20,13 @@ services:
     build:
       context: ./docker/nginx
       args:
-        NGROK_ARCH: linux-arm64   # use linux-amd64 if you're on Intel
+        NGROK_ARCH: ${NGROK_ARCH:-linux-arm64}
     image: local/magento-nginx-with-ngrok
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
       NGROK_DOMAIN: ${NGROK_DOMAIN:-}   # optional reserved domain
     ports:
-      - "8081:80"     # storefront/admin
+      - "${MAGENTO_PORT_BIND:-8081}:80"     # storefront/admin
     #      - "4040:4040"   # ngrok local API (read by init.sh)
     volumes:
       - ../magento-install/src:/var/www/html:ro
@@ -38,7 +38,7 @@ services:
     networks: [ magento-net ]
 
   db:
-    platform: linux/arm64
+    platform: ${DOCKER_PLATFORM:-linux/arm64}
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -53,7 +53,7 @@ services:
     networks: [magento-net]
 
   opensearch:
-    platform: linux/arm64
+    platform: ${DOCKER_PLATFORM:-linux/arm64}
     image: opensearchproject/opensearch:2.13.0
     environment:
       - discovery.type=single-node
