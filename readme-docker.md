@@ -28,7 +28,7 @@ bin/magento cache:flush
 '
 ```
 
-### The to verify
+### The to verify:
 ```
 docker compose exec -T -u www-data app bash -lc '
 cd /var/www/html
