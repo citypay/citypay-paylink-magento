@@ -13,7 +13,7 @@
 * you just stopped/restarted the AWS instance
 * you only need containers running again
 
-## Use the following to setup a new base_url
+## Use the following to setup a new base_url:
 
 ```
 docker compose exec -T -u www-data app bash -lc '
