@@ -22,6 +22,8 @@
                 <is_gateway>1</is_gateway>
                 <sort_order>1</sort_order>
                 <testmode>0</testmode>
+                <payment_mode>paylink</payment_mode>
+                <elements_style>row</elements_style>
             </citypay_gateway>
         </payment>
     </default>

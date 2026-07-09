@@ -35,18 +35,15 @@
                     <source_model>CityPay\Paylink\Model\Adminhtml\Source\TestMode</source_model>
                     <comment>Select to process in Test Mode or Live Transactions.</comment>
                 </field>
-                <field id="allowspecific" translate="label" type="allowspecific" sortOrder="130" showInDefault="9"
-                       showInWebsite="1" showInStore="0">
+                <field id="allowspecific" translate="label" type="allowspecific" sortOrder="130" showInDefault="9" showInWebsite="1" showInStore="0">
                     <label>Payment From Applicable Countries</label>
                     <source_model>Magento\Payment\Model\Config\Source\Allspecificcountries</source_model>
                 </field>
-                <field id="specificcountry" translate="label" type="multiselect" sortOrder="140" showInDefault="1"
-                       showInWebsite="1" showInStore="0">
+                <field id="specificcountry" translate="label" type="multiselect" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Payment From Specific Countries</label>
                     <source_model>Magento\Directory\Model\Config\Source\Country</source_model>
                 </field>
-                <field id="sort_order" translate="label" type="text" sortOrder="160" showInDefault="1" showInWebsite="1"
-                       showInStore="0">
+                <field id="sort_order" translate="label" type="text" sortOrder="160" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Sort Order</label>
                     <frontend_class>validate-number</frontend_class>
                 </field>
@@ -62,17 +59,42 @@
                     <label>Order Confirmation Email Address</label>
                     <comment>The email field is used for the Merchant to be notified on completion of the transaction by CityPay Paylink</comment>
                 </field>
+                <field id="payment_mode" translate="label" type="select" sortOrder="24" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Payment Mode</label>
+                    <source_model>CityPay\Paylink\Model\Adminhtml\Source\PaymentMode</source_model>
+                    <comment>Select whether checkout uses Paylink hosted payment or CityPay Elements.</comment>
+                </field>
                 <field id="options" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>PayLink Options</label>
                     <comment>See https://citypay.github.io/api-docs/paylink/#config-fields</comment>
+                    <depends>
+                        <field id="active">1</field>
+                        <field id="payment_mode">paylink</field>
+                    </depends>
                 </field>
                 <field id="postback_policy" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>PayLink Postback Policy</label>
                     <comment>See https://citypay.github.io/api-docs/paylink/#postback-handling</comment>
+                    <depends>
+                        <field id="active">1</field>
+                        <field id="payment_mode">paylink</field>
+                    </depends>
                 </field>
                 <field id="postbackhost" translate="label" type="text" sortOrder="26" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Postback Host</label>
                     <comment>Base store URL utilised to build postback URL</comment>
+                    <depends>
+                        <field id="active">1</field>
+                        <field id="payment_mode">paylink</field>
+                    </depends>
+                </field>
+                <field id="elements_style" translate="label" type="select" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Elements Style</label>
+                    <source_model>CityPay\Paylink\Model\Adminhtml\Source\ElementsStyle</source_model>
+                    <depends>
+                        <field id="active">1</field>
+                        <field id="payment_mode">elements</field>
+                    </depends>
                 </field>
             </group>
         </section>
