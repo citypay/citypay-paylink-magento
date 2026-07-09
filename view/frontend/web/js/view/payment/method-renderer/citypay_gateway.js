@@ -124,7 +124,20 @@ define(
                         'transaction_result': value
                     }
                 });
-            }
+            },
+
+            // Which payment method has been selected
+            getPaymentMode: function () {
+                return window.checkoutConfig.payment.citypay_gateway.paymentMode;
+            },
+
+            isPaylinkMode: function () {
+                return this.getPaymentMode() === 'paylink';
+            },
+
+            isElementsMode: function () {
+                return this.getPaymentMode() === 'elements';
+            },
         });
     }
 );

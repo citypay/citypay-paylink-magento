@@ -18,12 +18,12 @@
 ```
 docker compose exec -T -u www-data app bash -lc '
 cd /var/www/html
-bin/magento config:set web/unsecure/base_url "https://dac3-212-9-31-132.ngrok-free.app/"
-bin/magento config:set web/secure/base_url "https://dac3-212-9-31-132.ngrok-free.app/"
+bin/magento config:set web/unsecure/base_url "https://karleen-endocranial-neda.ngrok-free.dev"
+bin/magento config:set web/secure/base_url "https://karleen-endocranial-neda.ngrok-free.dev"
 bin/magento config:set web/secure/use_in_frontend 1
 bin/magento config:set web/secure/use_in_adminhtml 1
 bin/magento config:set web/secure/offloader_header X-Forwarded-Proto
-bin/magento config:set web/cookie/cookie_domain "dac3-212-9-31-132.ngrok-free.app"
+bin/magento config:set web/cookie/cookie_domain "karleen-endocranial-neda.ngrok-free.dev"
 bin/magento cache:flush
 '
 ```
