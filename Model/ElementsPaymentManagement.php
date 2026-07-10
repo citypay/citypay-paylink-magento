@@ -29,15 +29,15 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
 
     private function createPaymentSession()
     {
-        $quote = $this->checkoutSession->getQuote();
+        $clientSession = $this->checkoutSession->getQuote();
 
-        if (!$quote || !$quote->getId()) {
+        if (!$clientSession || !$clientSession->getId()) {
             throw new \Magento\Framework\Exception\LocalizedException(
                 __('Unable to create CityPay payment session: no active quote.')
             );
         }
 
-        $billingAddress = $quote->getBillingAddress();
+        $billingAddress = $clientSession->getBillingAddress();
 
         $merchantId = $this->scopeConfig->getValue(
             'payment/citypay_gateway/merchantid',
@@ -59,18 +59,18 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             ScopeInterface::SCOPE_STORE
         );
 
-        $amount = (int) number_format((float) $quote->getGrandTotal(), 2, '', '');
+        $amount = (int) number_format((float) $clientSession->getGrandTotal(), 2, '', '');
 
         $payload = [
             'test' => $testMode,
             'merchantId' => (int) $merchantId,
             'licenceKey' => $licenceKey,
             'pub_key' => $pub_key,
-            'identifier' => 'quote-' . $quote->getId(),
+            'identifier' => 'quote-' . $clientSession->getId(),
             'amount' => $amount,
-            'currency' => $quote->getQuoteCurrencyCode(),
+            'currency' => $clientSession->getQuoteCurrencyCode(),
             'cardholder' => [
-                'email' => $quote->getCustomerEmail(),
+                'email' => $clientSession->getCustomerEmail(),
                 'firstName' => $billingAddress ? $billingAddress->getFirstname() : null,
                 'lastName' => $billingAddress ? $billingAddress->getLastname() : null,
                 'address' => [
@@ -84,7 +84,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         ];
 
         $response = $this->postJson(
-            'https://api.citypay.com/YOUR-ELEMENTS-SESSION-ENDPOINT',
+            "https://api.citypay.com/intent/create",
             $payload
         );
 
@@ -95,7 +95,6 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
                 __('Unable to create CityPay payment session.')
             );
         }
-
         return $response;
     }
 
@@ -133,5 +132,21 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         }
 
         return $decoded;
+    }
+
+    public function authorise()
+    {
+        return json_encode([
+            'success' => false,
+            'message' => 'CityPay Elements authorise is not implemented.',
+        ]);
+    }
+
+    public function verifyAuth()
+    {
+        return json_encode([
+            'success' => false,
+            'message' => 'CityPay Elements verifyAuth is not implemented.',
+        ]);
     }
 }

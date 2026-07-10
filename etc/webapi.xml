@@ -36,7 +36,7 @@
     <route url="/V1/citypay/elements/payment-session" method="POST">
         <service class="CityPay\Paylink\Api\ElementsPaymentManagementInterface" method="createSession"/>
         <resources>
-            <resource ref="self" />
+            <resource ref="anonymous" />
         </resources>
     </route>
 
@@ -44,7 +44,7 @@
     <route url="/V1/citypay/elements/authorise" method="POST">
         <service class="CityPay\Paylink\Api\ElementsPaymentManagementInterface" method="authorise"/>
         <resources>
-            <resource ref="self" />
+            <resource ref="anonymous" />
         </resources>
     </route>
 
@@ -52,9 +52,7 @@
     <route url="/V1/citypay/elements/verify-auth" method="POST">
         <service class="CityPay\Paylink\Api\ElementsPaymentManagementInterface" method="verifyAuth"/>
         <resources>
-            <resource ref="self" />
+            <resource ref="anonymous" />
         </resources>
     </route>
-
-
 </routes>

@@ -15,4 +15,14 @@ interface ElementsPaymentManagementInterface
      * @return string
      */
     public function createSession();
+
+    /**
+     * @return string
+     */
+    public function authorise();
+
+    /**
+     * @return string
+     */
+    public function verifyAuth();
 }
