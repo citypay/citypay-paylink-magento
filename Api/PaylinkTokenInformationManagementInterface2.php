@@ -10,8 +10,7 @@ namespace CityPay\Paylink\Api;
  * @api
  * @since 100.0.2
  */
-interface PaylinkTokenInformationManagementInterface2
-{
+interface PaylinkTokenInformationManagementInterface2 {
     /**
      * Get PayLinkToken for specified orderId.
      *

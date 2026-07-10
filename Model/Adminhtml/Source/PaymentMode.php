@@ -24,7 +24,7 @@ class PaymentMode implements \Magento\Framework\Option\ArrayInterface
             ],
             [
                 'value' => self::ELEMENTS,
-                'label' => __('Elements')
+                'label' => __('ElementsPaymentManagement')
             ]
         ];
     }

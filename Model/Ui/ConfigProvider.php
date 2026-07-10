@@ -9,8 +9,8 @@ namespace CityPay\Paylink\Model\Ui;
 
 use Magento\Checkout\Model\ConfigProviderInterface;
 use CityPay\Paylink\Gateway\Http\Client\ClientMock;
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\ScopeInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface; //allow the class to read Magento configuration values
+use Magento\Store\Model\ScopeInterface; //used to say the config should be read at the store scope
 
 /**
  * Class ConfigProvider
@@ -41,8 +41,16 @@ final class ConfigProvider implements ConfigProviderInterface
                     ],
                     'paymentMode' => $this->scopeConfig->getValue(
                         'payment/citypay_gateway/payment_mode',
+                        ScopeInterface::SCOPE_STORE //means Magento should read the setting for the current store view / store scope.
+                    ),
+                    'elementsStyle' => $this->scopeConfig->getValue(
+                        'payment/citypay_gateway/elements_style',
                         ScopeInterface::SCOPE_STORE
-                    )
+                    ),
+                    'pubKey' => $this->scopeConfig->getValue(
+                        'payment/citypay_gateway/public_key',
+                        ScopeInterface::SCOPE_STORE
+                    ),
                 ]
             ]
         ];

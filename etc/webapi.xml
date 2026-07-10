@@ -5,8 +5,7 @@
  * See COPYING.txt for license details.
  */
 -->
-<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
 
     <!-- Guest request a token to pay for an order (get order from checkOut session-->
     <route url="/V1/guest-carts/pltoken-information" method="POST">
@@ -32,4 +31,30 @@
             <resource ref="anonymous" />
         </resources>
     </route>
+
+    <!-- add endpoint route to /payment-session  -->
+    <route url="/V1/citypay/elements/payment-session" method="POST">
+        <service class="CityPay\Paylink\Api\ElementsPaymentManagementInterface" method="createSession"/>
+        <resources>
+            <resource ref="self" />
+        </resources>
+    </route>
+
+    <!-- add endpoint route to /authorise -->
+    <route url="/V1/citypay/elements/authorise" method="POST">
+        <service class="CityPay\Paylink\Api\ElementsPaymentManagementInterface" method="authorise"/>
+        <resources>
+            <resource ref="self" />
+        </resources>
+    </route>
+
+    <!-- add endpoint route to /verify-auth   -->
+    <route url="/V1/citypay/elements/verify-auth" method="POST">
+        <service class="CityPay\Paylink\Api\ElementsPaymentManagementInterface" method="verifyAuth"/>
+        <resources>
+            <resource ref="self" />
+        </resources>
+    </route>
+
+
 </routes>
