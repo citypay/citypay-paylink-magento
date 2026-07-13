@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<csp_whitelist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Csp:etc/csp_whitelist.xsd">
+    <policies>
+        <policy id="script-src">
+            <values>
+                <value id="citypay-js" type="host">https://js.citypay.com</value>
+            </values>
+        </policy>
+        <policy id="connect-src">
+            <values>
+                <value id="citypay-js" type="host">https://js.citypay.com</value>
+                <value id="citypay-api" type="host">https://api.citypay.com</value>
+                <value id="citypay-sandbox" type="host">https://sandbox.citypay.com</value>
+                <value id="citypay-secure" type="host">https://secure.citypay.com</value>
+            </values>
+        </policy>
+        <policy id="frame-src">
+            <values>
+                <value id="citypay-js" type="host">https://js.citypay.com</value>
+                <value id="citypay-secure" type="host">https://secure.citypay.com</value>
+            </values>
+        </policy>
+        <policy id="img-src">
+            <values>
+                <value id="citypay-www" type="host">https://www.citypay.com</value>
+                <value id="citypay-secure" type="host">https://secure.citypay.com</value>
+            </values>
+        </policy>
+    </policies>
+</csp_whitelist>

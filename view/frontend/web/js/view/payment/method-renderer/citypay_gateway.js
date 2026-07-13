@@ -6,6 +6,7 @@
 /*global define*/
 define(
     [
+        'require',
         'jquery',
         'Magento_Checkout/js/view/payment/default',
         'Magento_Checkout/js/action/place-order',
@@ -16,7 +17,7 @@ define(
         'mage/storage',
         'CityPay_Paylink/js/model/citypay-loader'
     ],
-    function ($,Component, placeOrderAction,getplTokenAction,additionalValidators,redirectOnSuccessAction,  urlBuilder, storage, loadCityPay) {
+    function (require, $,Component, placeOrderAction,getplTokenAction,additionalValidators,redirectOnSuccessAction,  urlBuilder, storage, loadCityPay) {
         'use strict';
 
         const config = window.checkoutConfig.payment.citypay_gateway;
@@ -66,7 +67,19 @@ define(
                 return this.getPaymentMode() === 'elements';
             },
 
+            selectPaymentMethod: function () {
+                const result = this._super();
+
+                if (this.isElementsMode()) {
+                    console.log("initialising CityPay Elements");
+                    this.initCityPayElements();
+                }
+
+                return result;
+            },
+
             createElementsSession: function () {
+                console.log("CityPay:Elements:in citypay_gateway.js, calling elements/payment-session")
                 return storage.post(
                     urlBuilder.createUrl('/citypay/elements/payment-session', {}),
                     JSON.stringify({})
@@ -76,6 +89,7 @@ define(
             },
 
             initCityPayElements: function () {
+                console.log("in initCityPayElements");
                 const self = this;
                 const config = window.checkoutConfig.payment.citypay_gateway;
 
@@ -99,37 +113,34 @@ define(
                         return;
                     }
 
-                    self.createElementsSession()
-                        .then(function (session) {
-                            self.session = session;
-                            return loadCityPay();
-                        })
-                        .then(function (CityPay) {
-                            self.citypay = CityPay.init({
-                                merchantId: config.merchantId
-                            });
+                    loadCityPay()
+                        .then(function (citypay) {
+                            self.citypay = citypay;
 
-                            return self.citypay({});
-                        })
-                        .then(function (api) {
-                            return api.elements({
-                                pubKey: config.pubKey,
+                            console.log("CityPay loaded, will start creating a payment session")
+
+                            return citypay.elements({
+                                pubKey: pubKey,
                                 createServerIntent: function () {
-                                    return self.session;
+                                    return self.createElementsSession();
                                 },
-                                eager: true
+                                eager: true,
                             });
                         })
                         .then(function (elements) {
+                            console.log("creating elements");
+
                             self.card = elements.cardElement({
                                 identifier: 'default',
                                 element: '#card-form',
-                                layout: config.elementsStyle || 'row'
+                                layout: elementsStyle || 'row'
                             });
 
+                            console.log("Elements: init...");
                             return self.card.init();
                         })
                         .then(function () {
+                            console.log("Elements: await...");
                             return self.card.awaitReady();
                         })
                         .then(function () {
@@ -137,20 +148,11 @@ define(
                         })
                         .fail(function (error) {
                             self.elementsLoading.reject(error);
+                            console.log("An error occurred: ", error);
                         });
                 }, 0);
 
                 return this.elementsLoading.promise();
-            },
-
-            selectPaymentMethod: function () {
-                var result = this._super();
-
-                if (this.isElementsMode()) {
-                    this.initCityPayElements();
-                }
-
-                return result;
             },
 
             placeOrder:function (data, event) {

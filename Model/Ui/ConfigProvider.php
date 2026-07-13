@@ -43,12 +43,16 @@ final class ConfigProvider implements ConfigProviderInterface
                         'payment/citypay_gateway/payment_mode',
                         ScopeInterface::SCOPE_STORE //means Magento should read the setting for the current store view / store scope.
                     ),
+                    'merchantId' => $this->scopeConfig->getValue(
+                        'payment/citypay_gateway/merchantid',
+                        ScopeInterface::SCOPE_STORE
+                    ),
                     'elementsStyle' => $this->scopeConfig->getValue(
                         'payment/citypay_gateway/elements_style',
                         ScopeInterface::SCOPE_STORE
                     ),
                     'pubKey' => $this->scopeConfig->getValue(
-                        'payment/citypay_gateway/public_key',
+                        'payment/citypay_gateway/pub_key',
                         ScopeInterface::SCOPE_STORE
                     ),
                 ]

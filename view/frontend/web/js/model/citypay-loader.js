@@ -7,6 +7,25 @@ define(['jquery'], function ($) {
         return window.CityPay || window.citypay;
     }
 
+    function waitForSdk(deferred, startedAt) {
+        var sdk = getSdk();
+
+        if (sdk) {
+            deferred.resolve(sdk);
+            return;
+        }
+
+        if (Date.now() - startedAt >= 10000) {
+            loading = null;
+            deferred.reject(new Error('CityPay SDK loaded but no CityPay global was found'));
+            return;
+        }
+
+        window.setTimeout(function () {
+            waitForSdk(deferred, startedAt);
+        }, 100);
+    }
+
     return function () {
         var sdk = getSdk();
 
@@ -26,17 +45,14 @@ define(['jquery'], function ($) {
         script.async = true;
 
         script.onload = function () {
-            var loadedSdk = getSdk();
-
-            if (loadedSdk) {
-                loading.resolve(loadedSdk);
-            } else {
-                loading.reject(new Error('CityPay SDK loaded but no CityPay global was found'));
-            }
+            waitForSdk(loading, Date.now());
         };
 
         script.onerror = function () {
-            loading.reject(new Error('Failed to load CityPay SDK'));
+            var deferred = loading;
+
+            loading = null;
+            deferred.reject(new Error('Failed to load CityPay SDK'));
         };
 
         document.head.appendChild(script);
