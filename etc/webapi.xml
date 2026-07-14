@@ -48,9 +48,9 @@
         </resources>
     </route>
 
-    <!-- add endpoint route to /verify-auth   -->
-    <route url="/V1/citypay/elements/verify-auth" method="POST">
-        <service class="CityPay\Paylink\Api\ElementsPaymentManagementInterface" method="verifyAuth"/>
+    <!-- add endpoint route to /verify-auth -->
+    <route url="/V1/citypay/elements/verify" method="POST">
+        <service class="CityPay\Paylink\Api\ElementsPaymentManagementInterface" method="verify"/>
         <resources>
             <resource ref="anonymous" />
         </resources>

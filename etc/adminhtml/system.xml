@@ -98,7 +98,13 @@
                 </field>
                 <field id="pub_key" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Elements Public Key</label>
-                    <source_model>CityPay\Paylink\Model\Adminhtml\Source\ElementsStyle</source_model>
+                    <depends>
+                        <field id="active">1</field>
+                        <field id="payment_mode">elements</field>
+                    </depends>
+                </field>
+                <field id="client_id" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>CityPay Client ID</label>
                     <depends>
                         <field id="active">1</field>
                         <field id="payment_mode">elements</field>

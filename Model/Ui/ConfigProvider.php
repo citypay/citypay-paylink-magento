@@ -55,6 +55,10 @@ final class ConfigProvider implements ConfigProviderInterface
                         'payment/citypay_gateway/pub_key',
                         ScopeInterface::SCOPE_STORE
                     ),
+                    'clientId' => $this->scopeConfig->getValue(
+                        'payment/citypay_gateway/client_id',
+                        ScopeInterface::SCOPE_STORE
+                    ),
                 ]
             ]
         ];

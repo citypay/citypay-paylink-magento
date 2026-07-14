@@ -11,6 +11,8 @@ use CityPay\Api\PaymentIntentApi;
 use CityPay\Configuration;
 use CityPay\Model\ApiKey;
 use CityPay\Model\PaymentIntentRequestModel;
+use CityPay\Model\AuthorisePaymentIntentRequestModel;
+use CityPay\Model\VerificationRequestModel;
 
 class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentManagementInterface {
     private $checkoutSession;
@@ -27,10 +29,19 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         $this->logger = $logger;
     }
 
-    public function createSession()
-    {
-        $this->logger->debug("CityPay:Elements: In createSession(), calling  createPaymentSession");
+    public function createSession() {
+        $this->logger->debug("CityPay:Elements: In createSession(), calling createPaymentSession");
         return json_encode($this->createPaymentSession());
+    }
+
+    public function authorise($paymentIntentId) {
+        $this->logger->debug("CityPay:Elements: In authorise(), calling authoriseRequest");
+        return json_encode($this->authoriseRequest($paymentIntentId));
+    }
+
+    public function verify($paymentIntentId) {
+        $this->logger->debug("CityPay:Elements: In verify(), calling verifyAuth");
+        return json_encode($this->verifyAuth($paymentIntentId));
     }
 
     private function createPaymentSession()
@@ -51,31 +62,9 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             ScopeInterface::SCOPE_STORE
         );
 
-        $licenceKey = $this->scopeConfig->getValue(
-            'payment/citypay_gateway/licencekey',
-            ScopeInterface::SCOPE_STORE
-        );
-
-        $testMode = (bool) $this->scopeConfig->getValue(
-            'payment/citypay_gateway/testmode',
-            ScopeInterface::SCOPE_STORE
-        );
-
-        $pub_key = $this->scopeConfig->getValue(
-            'payment/citypay_gateway/pub_key',
-            ScopeInterface::SCOPE_STORE
-        );
-
         $amount = (int) number_format((float) $clientSession->getGrandTotal(), 2, '', '');
 
-        $apiKey = ApiKey::newKey("PC222210", $licenceKey);
-
-        $config = Configuration::getDefaultConfiguration()
-            ->setApiKey('cp-api-key', $apiKey)
-            ->setHost($testMode ? 'https://sandbox.citypay.com' : 'https://api.citypay.com');
-
-        $apiInstance = new PaymentIntentApi(new \GuzzleHttp\Client(), $config);
-
+        $apiInstance = $this->createPaymentIntentApi();
         $paymentIntent = new PaymentIntentRequestModel([
             'merchantid' => (int) $merchantId,
             'identifier' => 'quote-' . $clientSession->getId(),
@@ -96,32 +85,36 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         ]);
 
         $response = $apiInstance->createPaymentIntent($paymentIntent);
-        $this->logger->debug("Payment intent", $paymentIntent);
+        $responseData = $this->normalisePaymentIntentResponse($response);
+        $this->logger->debug("Payment Session Created: ", $responseData);
 
-        $statusCode = $response['statusCode'] ?? $response['status_code'] ?? null;
+        return [
+            'paymentIntentId' => $responseData['payment_intent_id'],
+            'opaqueKey' => $responseData['opaque_key'],
+            'sessionToken' => $responseData['session_token'],
+        ];
 
-        if ($statusCode !== null && ((int) $statusCode < 200 || (int) $statusCode >= 300)) {
-            $this->logger->debug(
-                'CityPay:Elements:createPaymentSession failed',
-                [
-                    'status_code' => $statusCode,
-                    'response' => $response,
-                ]
-            );
-
-            throw new \Magento\Framework\Exception\LocalizedException(
-                __('CityPay returned an invalid payment session response.')
-            );
-        }
-
-        $this->logger->debug(
-            'CityPay:Elements:createPaymentSession response',
-            ['response' => $response]
-        );
-
-        return $response;
     }
 
+    public function authoriseRequest($paymentIntentId) {
+        $apiInstance = $this->createPaymentIntentApi();
+        $authoriseRequest = new AuthorisePaymentIntentRequestModel([
+            'payment_intent_id' => $paymentIntentId,
+        ]);
+
+        return $apiInstance->authorisePaymentIntent($authoriseRequest);
+
+    }
+
+    public function verifyAuth($paymentIntentId) {
+        $apiInstance = $this->createPaymentIntentApi();
+        $verifiedAuth = new VerificationRequestModel([
+            'payment_intent_id' => $paymentIntentId,
+        ]);
+        return $apiInstance->verifyPaymentIntent($verifiedAuth);
+    }
+
+    // HELPER FUNCTIONS
     private function normalisePaymentIntentResponse($response)
     {
         if (is_array($response)) {
@@ -161,42 +154,29 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         return [];
     }
 
-    private function extractPaymentIntentId($response, array $responseData)
+    private function createPaymentIntentApi(): PaymentIntentApi
     {
-        if (is_object($response) && method_exists($response, 'getPaymentIntentId')) {
-            return $response->getPaymentIntentId();
-        }
+        $clientId = $this->scopeConfig->getValue(
+            'payment/citypay_gateway/client_id',
+            ScopeInterface::SCOPE_STORE
+        );
 
-        foreach (['paymentIntentId', 'payment_intent_id'] as $key) {
-            if (!empty($responseData[$key])) {
-                return $responseData[$key];
-            }
-        }
+        $licenceKey = $this->scopeConfig->getValue(
+            'payment/citypay_gateway/licencekey',
+            ScopeInterface::SCOPE_STORE
+        );
 
-        if ($response instanceof \ArrayAccess) {
-            foreach (['paymentIntentId', 'payment_intent_id'] as $key) {
-                if ($response->offsetExists($key) && !empty($response[$key])) {
-                    return $response[$key];
-                }
-            }
-        }
+        $testMode = (bool) $this->scopeConfig->getValue(
+            'payment/citypay_gateway/testmode',
+            ScopeInterface::SCOPE_STORE
+        );
 
-        return null;
-    }
+        $apiKey = ApiKey::newKey($clientId, $licenceKey);
 
-    public function authorise()
-    {
-        return json_encode([
-            'success' => false,
-            'message' => 'CityPay Elements authorise is not implemented.',
-        ]);
-    }
+        $config = Configuration::getDefaultConfiguration()
+            ->setApiKey('cp-api-key', $apiKey)
+            ->setHost($testMode ? 'https://sandbox.citypay.com' : 'https://api.citypay.com');
 
-    public function verifyAuth()
-    {
-        return json_encode([
-            'success' => false,
-            'message' => 'CityPay Elements verifyAuth is not implemented.',
-        ]);
+        return new PaymentIntentApi(new \GuzzleHttp\Client(), $config);
     }
 }

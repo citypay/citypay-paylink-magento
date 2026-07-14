@@ -25,8 +25,7 @@
         </div>
 
         <!-- ko if: isElementsMode() -->
-        <div class="citypay-elements-mode">Elements will show here:</div>
-        <div id="card-form" style="border: black 1px solid"></div>
+        <div id="card-form" data-bind="afterRender: onCardFormRendered" style="width: 100%; margin-bottom: 10px;"></div>
         <!-- /ko -->
 
         <div class="actions-toolbar">

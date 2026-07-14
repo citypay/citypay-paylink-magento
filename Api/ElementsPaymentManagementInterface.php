@@ -16,13 +16,17 @@ interface ElementsPaymentManagementInterface
      */
     public function createSession();
 
-    /**
-     * @return string
-     */
-    public function authorise();
 
     /**
+     * @param string $paymentIntentId
      * @return string
      */
-    public function verifyAuth();
+    public function authorise($paymentIntentId);
+
+
+    /**
+     * @param string $paymentIntentId
+     * @return string
+     */
+    public function verify($paymentIntentId);
 }

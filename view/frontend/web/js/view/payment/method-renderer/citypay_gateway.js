@@ -37,11 +37,20 @@ define(
                     .observe([
                         'transactionResult'
                     ]);
+
+                this.isChecked.subscribe(function () {
+                    this.loadCityPayIfSelected();
+                }, this);
+
                 return this;
             },
 
             getCode: function () {
                 return 'citypay_gateway';
+            },
+
+            isSelected: function () {
+                return this.getCode() === this.isChecked();
             },
 
             getData: function () {
@@ -67,22 +76,58 @@ define(
                 return this.getPaymentMode() === 'elements';
             },
 
+            loadCityPayIfSelected: function () {
+                if (this.isElementsMode() && this.isSelected()) {
+                    return this.initCityPayElements();
+                }
+                console.log("Start loading CityPay SDK");
+
+                return $.Deferred().resolve().promise();
+            },
+
+            onCardFormRendered: function () {
+                this.loadCityPayIfSelected();
+            },
+
             selectPaymentMethod: function () {
                 const result = this._super();
-
-                if (this.isElementsMode()) {
-                    console.log("initialising CityPay Elements");
-                    this.initCityPayElements();
-                }
-
+                this.loadCityPayIfSelected();
                 return result;
             },
 
             createElementsSession: function () {
-                console.log("CityPay:Elements:in citypay_gateway.js, calling elements/payment-session")
+                const self = this;
+                console.log("CityPay:Elements:in citypay_gateway.js, calling elements/payment-session");
+
                 return storage.post(
                     urlBuilder.createUrl('/citypay/elements/payment-session', {}),
                     JSON.stringify({})
+                ).then(function (response) {
+                    response = typeof response === 'string' ? JSON.parse(response) : response;
+                    self.paymentIntentId = response.paymentIntentId;
+                    return response;
+                });
+            },
+
+            authorisePayment: function (paymentIntentId) {
+                console.log("CityPay:Elements:in authorisePayment");
+                return storage.post(
+                    urlBuilder.createUrl('/citypay/elements/authorise', {}),
+                    JSON.stringify({
+                        paymentIntentId: paymentIntentId
+                    })
+                ).then(function (response) {
+                    return typeof response === 'string' ? JSON.parse(response) : response;
+                });
+            },
+
+            verify: function (paymentIntentId) {
+                console.log("CityPay:Elements:in verify");
+                return storage.post(
+                    urlBuilder.createUrl('/citypay/elements/verify', {}),
+                    JSON.stringify({
+                        paymentIntentId: paymentIntentId
+                    })
                 ).then(function (response) {
                     return typeof response === 'string' ? JSON.parse(response) : response;
                 });
@@ -202,7 +247,35 @@ define(
 
                                      */
                                 } else if (self.isElementsMode()) {
-                                    console.log("Placing Order for ElementsPaymentManagement")
+                                    console.log("Placing Order for ElementsPaymentManagement");
+
+                                    self.card.tokenise()
+                                        .then(function (tokeniseResponse) {
+                                            const token = tokeniseResponse.data.cp_card_token;
+
+                                            return self.card.attach({
+                                                intentId: self.paymentIntentId,
+                                                token: token
+                                            });
+                                        })
+                                        .then(function () {
+                                            self.card.confirm({
+                                                intentId: self.paymentIntentId,
+                                            }).then(function (confirmResult) {
+                                                console.log("CityPay:Elements: confirm result: ", confirmResult);
+
+                                                if (confirmResult.status !== 'requires_authorisation') {
+                                                    return;
+                                                }
+
+                                                return self.authorisePayment(self.paymentIntentId);
+                                            }).then(function (auth) {
+                                                console.log('Authorise result', auth);
+                                                return self.verify(self.paymentIntentId);
+                                            }).then(function (verifyResult) {
+                                                console.log("CityPay:Elements: verified result: ", verifyResult);
+                                            });
+                                        });
                                 }
                             }
                         ).always(
