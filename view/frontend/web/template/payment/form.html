@@ -25,7 +25,20 @@
         </div>
 
         <!-- ko if: isElementsMode() -->
-        <div id="card-form" data-bind="afterRender: onCardFormRendered" style="width: 100%; margin-bottom: 10px;"></div>
+        <div>
+            <!-- Apple Pay -->
+            <div id="apple-pay" class="apple-pay" style="width: 100%; border: 1px solid red">Apple Pay</div>
+
+            <!-- Separator -->
+            <div style="width: 100%; display: flex; flex-direction: row; justify-content: center; align-items: center;">
+                <div style="width: 20%; border: 1px solid gray; margin-top: 20px; margin-bottom: 20px; margin-right: 5px;"></div>
+                <div>or pay by card</div>
+                <div style="width: 20%; border: 1px solid gray; margin-top: 20px; margin-bottom: 20px; margin-left: 5px"></div>
+            </div>
+
+            <!-- Elements Card Form -->
+            <div id="card-form" data-bind="afterRender: onCardFormRendered" style="width: 100%; margin-bottom: 10px;"></div>
+        </div>
         <!-- /ko -->
 
         <div class="actions-toolbar">
