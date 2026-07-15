@@ -23,7 +23,6 @@
         </policy>
         <policy id="img-src">
             <values>
-                <value id="citypay-www" type="host">https://www.citypay.com</value>
                 <value id="citypay-secure" type="host">https://secure.citypay.com</value>
             </values>
         </policy>

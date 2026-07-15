@@ -12,7 +12,7 @@ use CityPay\Configuration;
 use CityPay\Model\ApiKey;
 use CityPay\Model\PaymentIntentRequestModel;
 use CityPay\Model\AuthorisePaymentIntentRequestModel;
-use CityPay\Model\VerificationRequestModel;
+use CityPay\Model\VerificationRequest;
 
 class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentManagementInterface {
     private $checkoutSession;
@@ -107,11 +107,36 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
     }
 
     public function verifyAuth($paymentIntentId) {
-        $apiInstance = $this->createPaymentIntentApi();
-        $verifiedAuth = new VerificationRequestModel([
-            'payment_intent_id' => $paymentIntentId,
-        ]);
-        return $apiInstance->verifyPaymentIntent($verifiedAuth);
+        $clientId = $this->scopeConfig->getValue(
+            'payment/citypay_gateway/client_id',
+            ScopeInterface::SCOPE_STORE
+        );
+
+        $licenceKey = $this->scopeConfig->getValue(
+            'payment/citypay_gateway/licencekey',
+            ScopeInterface::SCOPE_STORE
+        );
+
+        $testMode = (bool) $this->scopeConfig->getValue(
+            'payment/citypay_gateway/testmode',
+            ScopeInterface::SCOPE_STORE
+        );
+
+        $host = $testMode ? 'https://sandbox.citypay.com' : 'https://api.citypay.com';
+        $apiKey = ApiKey::newKey($clientId, $licenceKey);
+
+        $response = (new \GuzzleHttp\Client())->request(
+            'GET',
+            $host . '/v6/intent/verify-auth/' . rawurlencode($paymentIntentId),
+            [
+                'headers' => [
+                    'cp-api-key' => $apiKey,
+                    'Accept' => 'application/json',
+                ],
+            ]
+        );
+
+        return json_decode((string) $response->getBody(), true);
     }
 
     // HELPER FUNCTIONS

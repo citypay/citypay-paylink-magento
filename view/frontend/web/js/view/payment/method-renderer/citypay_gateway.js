@@ -262,7 +262,7 @@ define(
                                             self.card.confirm({
                                                 intentId: self.paymentIntentId,
                                             }).then(function (confirmResult) {
-                                                console.log("CityPay:Elements: confirm result: ", confirmResult);
+                                                console.log("CityPay:Elements: confirm result: ");
 
                                                 if (confirmResult.status !== 'requires_authorisation') {
                                                     return;
@@ -270,10 +270,30 @@ define(
 
                                                 return self.authorisePayment(self.paymentIntentId);
                                             }).then(function (auth) {
-                                                console.log('Authorise result', auth);
+                                                console.log('Authorising result');
                                                 return self.verify(self.paymentIntentId);
                                             }).then(function (verifyResult) {
-                                                console.log("CityPay:Elements: verified result: ", verifyResult);
+                                                console.log("CityPay:Elements: verified result");
+
+                                                const approved =
+                                                    verifyResult.status === 'success' ||
+                                                    verifyResult.authen_result === 'Y' ||
+                                                    verifyResult.result === 'Verified' ||
+                                                    verifyResult.trans_status === 'Verified';
+
+                                                if (!approved) {
+                                                    throw new Error('CityPay payment was not approved.');
+                                                }
+
+                                                self.messageContainer.addSuccessMessage({
+                                                    message: 'Payment approved. Redirecting to your order confirmation.'
+                                                });
+
+                                                self.afterPlaceOrder();
+
+                                                if (self.redirectAfterPlaceOrder) {
+                                                    redirectOnSuccessAction.execute();
+                                                }
                                             });
                                         });
                                 }

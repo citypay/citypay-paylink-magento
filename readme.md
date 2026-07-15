@@ -1,12 +1,10 @@
-<!--![image](https://www.citypay.com/wp-content/uploads/2022/08/Citypaylogo-x500.png)-->
-<img src="https://www.citypay.com/wp-content/uploads/2022/08/Citypaylogo-x500.png" height="75"/>
+<img src="view/frontend/web/images/citypay-secure.svg" height="75"/>
      
 # Magento 2 Payment Module
 
-CityPay Paylink Magento 2 Payment Module is a secure payment method in your Magento2 webshop. Integrating CityPay Paylink with Magento 2 is fast and easy.
+CityPay Paylink Magento 2 Payment Module is a secure payment method in your Magento2 webshop. Integrating CityPay Paylink and CityPay Elements with Magento 2 is fast and easy.
 
-To make payments in your Magento 2 webshop, download the CityPay Paylink Magento 2 module here, and you will be able to offer a vast variety of most 
-frequently used national and international online payment methods and solutions for worldwide internet commerce.
+To make payments in your Magento 2 webshop, download the CityPay Paylink Magento 2 module here, and you will be able to offer hosted Paylink payments or embedded CityPay Elements card payments for worldwide internet commerce.
 
 ## Installing CityPay Paylink Payment Module
 
@@ -44,9 +42,13 @@ The log file can be found at `{root}/var/log/debug.log` where root is normally `
 ## Customer Experience
 
 ### Checkout
-- Customer will be presented with the option to pay via CityPay Hosted Payment Form
+- Customer will be presented with the option to pay via CityPay. Depending on the configured payment mode, checkout can use the CityPay Paylink hosted payment form or CityPay Elements embedded card fields.
 
 ![checkout](https://user-images.githubusercontent.com/86474060/236212991-a2b591e5-54f4-49a9-9034-43ecf3263de8.png)
+
+- In Elements mode, the card form is displayed directly in the Magento checkout.
+
+![checkout_elements](view/frontend/web/images/ElementsCheckoutCardMagento.png)
 
 ___
 ### Paylink Payment Form
@@ -91,4 +93,3 @@ will have the ability to view that the payment was made by the CityPay Payment M
 ___
 
 ![admin_order_info](https://user-images.githubusercontent.com/86474060/236220049-3d1fe0c7-87a3-4dba-93ae-8c63c82702d6.png)
-
