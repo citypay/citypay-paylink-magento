@@ -5,3 +5,23 @@ fieldset#payment_us_citypay_gateway {
     border: 1px solid red;
     padding-left: 0;
 }
+
+/*.citypay-apple-pay-button {*/
+/*    width: 100%;*/
+/*    min-width: 140px;*/
+/*    max-width: 420px;*/
+
+/*    height: 56px;*/
+/*    min-height: 30px;*/
+
+/*    margin: 6px auto;*/
+/*}*/
+
+/*button.apple-pay-btn {*/
+/*    border-radius: .375rem;*/
+/*    width: 100%;*/
+/*    height: 50px;*/
+/*    -webkit-appearance: -apple-pay-button;*/
+/*    -apple-pay-button-type: check-out;*/
+/*    -apple-pay-button-style: black;*/
+/*}*/

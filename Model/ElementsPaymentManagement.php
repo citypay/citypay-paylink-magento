@@ -87,11 +87,13 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         $response = $apiInstance->createPaymentIntent($paymentIntent);
         $responseData = $this->normalisePaymentIntentResponse($response);
         $this->logger->debug("Payment Session Created: ", $responseData);
+        $amount = (int) $responseData['context']['amount'];
 
         return [
             'paymentIntentId' => $responseData['payment_intent_id'],
             'opaqueKey' => $responseData['opaque_key'],
             'sessionToken' => $responseData['session_token'],
+            'amount' => $amount,
         ];
 
     }

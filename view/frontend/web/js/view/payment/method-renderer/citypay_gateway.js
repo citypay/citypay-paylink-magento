@@ -58,7 +58,9 @@ define(
                     'method': this.item.method,
                     'additional_data': {
                         'transaction_result': this.transactionResult(),
-                        'orderId': this.orderId
+                        'orderId': this.orderId,
+                        payment_intent_id: this.paymentIntentId,
+                        payment_channel: 'apple_pay'
                     }
                 };
             },
@@ -164,29 +166,93 @@ define(
 
                             console.log("CityPay loaded, will start creating a payment session")
 
-                            return citypay.elements({
-                                pubKey: pubKey,
-                                createServerIntent: function () {
-                                    return self.createElementsSession();
-                                },
-                                eager: true,
-                            });
+                            return self.createElementsSession()
+                                .then(function (session) {
+                                    self.elementsSession = session;
+
+                                    return citypay.elements({
+                                        pubKey: pubKey,
+
+                                        // Return the already-created session
+                                        createServerIntent: function () {
+                                            return Promise.resolve(session);
+                                        },
+
+                                        eager: true
+                                    });
+                                });
                         })
                         .then(function (elements) {
                             console.log("creating elements");
+                            self.elements = elements;
 
                             self.card = elements.cardElement({
                                 identifier: 'default',
                                 element: '#card-form',
                                 layout: elementsStyle || 'row'
                             });
-
                             console.log("Elements: init...");
-                            return self.card.init();
-                        })
-                        .then(function () {
-                            console.log("Elements: await...");
-                            return self.card.awaitReady();
+
+                            const amount = Number(self.elementsSession.amount);
+
+                            if (!Number.isFinite(amount) || amount <= 0) {
+                                throw new Error(
+                                    'Invalid Apple Pay amount: ' + self.elementsSession.amount
+                                );
+                            }
+
+                            self.applePay = elements.applePay({
+                                identifier: 'applepay',
+                                element: '#apple-pay',
+                                appearance: {
+                                    type: 'order',
+                                    style: 'dark',
+                                },
+                                total: {
+                                    // amount: amount,
+                                    amount: 1,
+                                    label: 'GBP'
+                                }
+                            });
+
+                            self.applePay.onAuthoriseStart(function () {
+                                // Prevent duplicate checkout submissions while Apple Pay is processing.
+                                self.isPlaceOrderActionAllowed(false);
+                            });
+
+                            self.applePay.onAuthoriseEnd(function (event) {
+                                if (!event.success) {
+                                    // Allow the customer to try again.
+                                    self.isPlaceOrderActionAllowed(true);
+                                    return;
+                                }
+
+                                // Keep it false while Magento verifies CityPay and places the order.
+                                self.getPlaceOrderDeferredObject()
+                                    .done(function () {
+                                        self.afterPlaceOrder();
+                                        redirectOnSuccessAction.execute();
+                                    })
+                                    .fail(function () {
+                                        self.isPlaceOrderActionAllowed(true);
+                                        self.messageContainer.addErrorMessage({
+                                            message: 'Your payment was received, but the order could not be created. Please contact support.'
+                                        });
+                                    });
+                            });
+
+                            return self.card.init()
+                                .then(function () {
+                                    console.log("Apple Pay: init...");
+                                    return self.applePay.init();
+                                })
+                                .then(function () {
+                                    console.log("ApplePay and Elements: await...")
+                                    return Promise.all([
+                                        self.card.awaitReady(),
+                                        self.applePay.awaitReady()
+                                    ]);
+                                });
                         })
                         .then(function () {
                             self.elementsLoading.resolve(self.card);
