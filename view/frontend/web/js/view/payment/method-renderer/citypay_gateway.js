@@ -205,7 +205,7 @@ define(
                                 identifier: 'applepay',
                                 element: '#apple-pay',
                                 appearance: {
-                                    type: 'order',
+                                    type: 'check-out',
                                     style: 'dark',
                                 },
                                 total: {
@@ -252,6 +252,29 @@ define(
                                         self.card.awaitReady(),
                                         self.applePay.awaitReady()
                                     ]);
+                                }).then(function () {
+                                    const applePayButton = document.querySelector(
+                                        '#apple-pay > button.apple-pay-button'
+                                    );
+
+                                    if (applePayButton) {
+                                        applePayButton.style.setProperty(
+                                            '-apple-pay-button-style',
+                                            'black'
+                                        );
+
+                                        Object.assign(applePayButton.style, {
+                                            display: 'block',
+                                            width: '315px',
+                                            maxWidth: '100%',
+                                            height: '42px',
+                                            minHeight: '42px',
+                                            flex: '0 1 315px',
+                                            margin: '6px auto',
+                                            padding: '0',
+                                            border: '0'
+                                        });
+                                    }
                                 });
                         })
                         .then(function () {
