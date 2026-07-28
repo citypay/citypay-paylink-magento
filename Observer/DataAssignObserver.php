@@ -7,6 +7,8 @@ namespace CityPay\Paylink\Observer;
 
 use Magento\Framework\Event\Observer;
 use Magento\Payment\Observer\AbstractDataAssignObserver;
+use Magento\Framework\DataObject;
+use Magento\Quote\Api\Data\PaymentInterface;
 
 class DataAssignObserver extends AbstractDataAssignObserver
 {
@@ -21,11 +23,31 @@ class DataAssignObserver extends AbstractDataAssignObserver
 
         $paymentInfo = $method->getInfoInstance();
 
-        if ($data->getDataByKey('transaction_result') !== null) {
-            $paymentInfo->setAdditionalInformation(
-                'transaction_result',
-                $data->getDataByKey('transaction_result')
-            );
+        $additionalData = $data->getData(
+            PaymentInterface::KEY_ADDITIONAL_DATA
+        );
+
+        if ($additionalData instanceof DataObject) {
+            $additionalData = $additionalData->getData();
+        }
+
+        if (!is_array($additionalData)) {
+            return;
+        }
+
+        foreach (
+            ['transaction_result', 'payment_intent_id', 'payment_channel']
+            as $key
+        ) {
+            if (
+                array_key_exists($key, $additionalData) &&
+                $additionalData[$key] !== null
+            ) {
+                $paymentInfo->setAdditionalInformation(
+                    $key,
+                    $additionalData[$key]
+                );
+            }
         }
     }
 }

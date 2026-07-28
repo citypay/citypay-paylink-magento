@@ -94,6 +94,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             'opaqueKey' => $responseData['opaque_key'],
             'sessionToken' => $responseData['session_token'],
             'amount' => $amount,
+            'googlePayMerchantId' => $responseData['merchant_id'],
         ];
 
     }
