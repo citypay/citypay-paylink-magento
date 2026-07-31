@@ -195,7 +195,7 @@ define(
                             console.log("Elements: init...");
 
                             const amount = Number(self.elementsSession.amount);
-                            const GooglePayMerchantId = self.elementsSession.merchantId
+                            const GooglePayMerchantId = self.elementsSession.GooglePayMID;
 
                             if (!Number.isFinite(amount) || amount <= 0) {
                                 throw new Error(
@@ -224,6 +224,8 @@ define(
                                 identifier: 'quote-' + googlePayAmount,
                                 environment: 'TEST', // use 'PRODUCTION' after Google approval
                                 merchantId: GooglePayMerchantId,
+                                // merchantId: 'BCR2DN4TXKZL3HB7',
+                                // merchantId: '64241955',
                                 // merchantName: 'Your Store',
                                 channel: 'local',
                                 total: {
@@ -272,8 +274,12 @@ define(
                                 self.paymentChannel = 'google_pay';
 
                                 try {
-                                    await self.googlePay.attach({intentId: self.paymentIntentId});
+                                    const attach = await self.googlePay.attach({intentId: self.paymentIntentId});
 
+                                    if (attach.status !== 'requires_customer_confirmation') {
+                                        console.error("Attach failed: ", attach.error);
+                                        return;
+                                    }
                                     const confirmResult = await self.googlePay.confirm({
                                         intentId: self.paymentIntentId
                                     });

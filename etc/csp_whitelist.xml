@@ -6,6 +6,7 @@
             <values>
                 <value id="citypay-js" type="host">https://js.citypay.com</value>
                 <value id="citypay-local-script" type="host">https://dev.citypay.local:8080</value>
+                <value id="citypay-local-connect-api" type="host">https://9195-212-9-31-132.ngrok-free.app</value>
             </values>
         </policy>
         <policy id="connect-src">
@@ -15,6 +16,7 @@
                 <value id="citypay-sandbox" type="host">https://sandbox.citypay.com</value>
                 <value id="citypay-secure" type="host">https://secure.citypay.com</value>
                 <value id="citypay-local-connect" type="host">https://dev.citypay.local:8080</value>
+                <value id="citypay-local-connect-api" type="host">https://9195-212-9-31-132.ngrok-free.app</value>
             </values>
         </policy>
         <policy id="frame-src">
@@ -22,6 +24,7 @@
                 <value id="citypay-js" type="host">https://js.citypay.com</value>
                 <value id="citypay-secure" type="host">https://secure.citypay.com</value>
                 <value id="citypay-local-frame" type="host">https://dev.citypay.local:8080</value>
+                <value id="citypay-local-connect-api" type="host">https://9195-212-9-31-132.ngrok-free.app</value>
             </values>
         </policy>
         <policy id="img-src">
