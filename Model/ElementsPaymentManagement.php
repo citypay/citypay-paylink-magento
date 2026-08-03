@@ -130,7 +130,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             ScopeInterface::SCOPE_STORE
         );
 
-        $host = $testMode ? 'https://9195-212-9-31-132.ngrok-free.app' : 'https://api.citypay.com';
+        $host = $testMode ? 'https://a029-212-9-31-132.ngrok-free.app' : 'https://api.citypay.com';
         $apiKey = ApiKey::newKey($clientId, $licenceKey);
 
         $response = (new \GuzzleHttp\Client())->request(
@@ -208,7 +208,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
 
         $config = Configuration::getDefaultConfiguration()
             ->setApiKey('cp-api-key', $apiKey)
-            ->setHost($testMode ? 'https://9195-212-9-31-132.ngrok-free.app' : 'https://api.citypay.com');
+            ->setHost($testMode ? 'https://a029-212-9-31-132.ngrok-free.app' : 'https://api.citypay.com');
 
         return new PaymentIntentApi(new \GuzzleHttp\Client(), $config);
     }
