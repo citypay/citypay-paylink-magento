@@ -88,17 +88,15 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         $responseData = $this->normalisePaymentIntentResponse($response);
         $this->logger->debug("Payment Session Created: ", $responseData);
         $amount = (int) $responseData['context']['amount'];
+        $googlepayMID = (string) $responseData['services']['google_pay']['merchantId'];
 
         $result = [
             'paymentIntentId' => $responseData['payment_intent_id'],
             'opaqueKey' => $responseData['opaque_key'],
             'sessionToken' => $responseData['session_token'],
-            'amount' => $amount
+            'amount' => $amount,
+            'googlepayMID' => $googlepayMID
         ];
-
-        if (!empty($responseData['services']['google_pay']['merchantId'])) {
-            $result['GooglePayMID'] = $responseData['services']['google_pay']['merchantId'];
-        }
 
         return $result;
 
@@ -130,7 +128,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             ScopeInterface::SCOPE_STORE
         );
 
-        $host = $testMode ? 'https://a029-212-9-31-132.ngrok-free.app' : 'https://api.citypay.com';
+        $host = $testMode ? 'https://sandbox.citypay.com' : 'https://api.citypay.com';
         $apiKey = ApiKey::newKey($clientId, $licenceKey);
 
         $response = (new \GuzzleHttp\Client())->request(
@@ -208,7 +206,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
 
         $config = Configuration::getDefaultConfiguration()
             ->setApiKey('cp-api-key', $apiKey)
-            ->setHost($testMode ? 'https://a029-212-9-31-132.ngrok-free.app' : 'https://api.citypay.com');
+            ->setHost($testMode ? 'https://sandbox.citypay.com' : 'https://api.citypay.com');
 
         return new PaymentIntentApi(new \GuzzleHttp\Client(), $config);
     }

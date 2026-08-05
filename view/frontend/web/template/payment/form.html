@@ -57,6 +57,22 @@
                     max-width: 315px;
                 }
 
+                .citypay-wallet-separator {
+                    display: none;
+                    width: 100%;
+                    flex-direction: row;
+                    justify-content: center;
+                    align-items: center;
+                    margin: 20px 0;
+                }
+
+                .citypay-wallet-grid:has(
+                    button.apple-pay-button,
+                    button.gpay-button
+                ) + .citypay-wallet-separator {
+                    display: flex;
+                }
+
                 .citypay-wallet-slot button.apple-pay-button {
                     display: block;
                     width: 100% !important;
@@ -100,15 +116,15 @@
             </style>
 
             <div id="citypay-wallet-grid" class="citypay-wallet-grid">
-                <!-- Apple Pay -->
-                <div id="apple-pay" class="citypay-wallet-slot apple-pay"></div>
-
                 <!-- Google Pay -->
                 <div id="google-pay" class="citypay-wallet-slot google-pay"></div>
+
+                <!-- Apple Pay -->
+                <div id="apple-pay" class="citypay-wallet-slot apple-pay"></div>
             </div>
 
             <!-- Separator -->
-            <div style="width: 100%; display: flex; flex-direction: row; justify-content: center; align-items: center;">
+            <div class="citypay-wallet-separator">
                 <div style="width: 20%; border: 1px solid gray; margin-top: 20px; margin-bottom: 20px; margin-right: 5px;"></div>
                 <div>or pay by card</div>
                 <div style="width: 20%; border: 1px solid gray; margin-top: 20px; margin-bottom: 20px; margin-left: 5px"></div>
@@ -133,7 +149,7 @@
             </div>
         </div>
 
-        <p style="font-size: 80%; opacity: 60%; ">
+        <p style="font-size: 80%; opacity: 60%; margin-top: 10px;">
             <img data-bind="attr: {src: require.toUrl('CityPay_Paylink/images/citypay-secure.svg')}" width="20" alt="" style="display: inline; vertical-align: middle" />
             CityPay is a PCI-DSS level 1 certified payment provider
         </p>

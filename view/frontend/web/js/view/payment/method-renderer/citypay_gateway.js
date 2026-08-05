@@ -195,7 +195,7 @@ define(
                             console.log("Elements: init...");
 
                             const amount = Number(self.elementsSession.amount);
-                            const GooglePayMerchantId = self.elementsSession.GooglePayMID;
+                            const GooglePayMerchantId = self.elementsSession.googlepayMID;
 
                             if (!Number.isFinite(amount) || amount <= 0) {
                                 throw new Error(
@@ -206,7 +206,7 @@ define(
                             const googlePayAmount = amount / 100;
 
                             self.applePay = elements.applePay({
-                                identifier: 'applepay' + amount,
+                                identifier: 'applepay-' + amount,
                                 element: '#apple-pay',
                                 appearance: {
                                     type: 'check-out',
@@ -214,20 +214,14 @@ define(
                                 },
                                 total: {
                                     amount: amount,
-                                    // amount: 1,
                                     label: 'GBP'
                                 }
                             });
 
                             self.googlePay = elements.googlePay({
                                 element: '#google-pay',
-                                identifier: 'quote-' + googlePayAmount,
-                                environment: 'TEST', // use 'PRODUCTION' after Google approval
+                                identifier: 'googlePay-' + googlePayAmount,
                                 merchantId: GooglePayMerchantId,
-                                // merchantId: 'BCR2DN4TXKZL3HB7',
-                                // merchantId: '64241955',
-                                // merchantName: 'Your Store',
-                                channel: 'local',
                                 total: {
                                     label: 'GBP',
                                     amount: googlePayAmount
@@ -277,9 +271,9 @@ define(
                                     const attach = await self.googlePay.attach({intentId: self.paymentIntentId});
 
                                     if (attach.status !== 'requires_customer_confirmation') {
-                                        console.error("Attach failed: ", attach.error);
                                         return;
                                     }
+
                                     const confirmResult = await self.googlePay.confirm({
                                         intentId: self.paymentIntentId
                                     });
@@ -317,8 +311,6 @@ define(
                                         redirectOnSuccessAction.execute();
                                     }
                                 } catch (error) {
-                                    console.error('Google Pay failed:', error);
-
                                     self.messageContainer.addErrorMessage({
                                         message: error.message || 'Google Pay could not be completed.'
                                     });
@@ -331,12 +323,13 @@ define(
                                 self.isPlaceOrderActionAllowed(true);
 
                                 self.messageContainer.addErrorMessage({
-                                    message: 'Google Pay was cancelled.'
+                                    message: 'Payment cancelled by user'
                                 });
+
+                                console.log("Payment cancelled by user.");
                             });
 
                             self.googlePay.onError(function (error) {
-                                console.error('Google Pay error:', error);
 
                                 self.isPlaceOrderActionAllowed(true);
 
@@ -535,7 +528,7 @@ define(
                                 } else if (self.isElementsMode()) {
                                     console.log("Placing Order for ElementsPaymentManagement");
 
-                                    self.card.tokenise()
+                                    return self.card.tokenise()
                                         .then(function (tokeniseResponse) {
                                             const token = tokeniseResponse.data.cp_card_token;
 
@@ -545,8 +538,9 @@ define(
                                             });
                                         })
                                         .then(function () {
-                                            self.card.confirm({
+                                            return self.card.confirm({
                                                 intentId: self.paymentIntentId,
+                                            });
                                             }).then(function (confirmResult) {
                                                 console.log("CityPay:Elements: confirm result: ");
 
@@ -555,9 +549,13 @@ define(
                                                 }
 
                                                 return self.authorisePayment(self.paymentIntentId);
-                                            }).then(function (auth) {
+                                            }).then(function (authResult) {
                                                 console.log('Authorising result');
+                                                if (authResult.authorised !== true && authResult.authorised !== 'true') {
+                                                    throw new Error('CityPay authorisation was declined.');
+                                                }
                                                 return self.verify(self.paymentIntentId);
+
                                             }).then(function (verifyResult) {
                                                 console.log("CityPay:Elements: verified result");
 
@@ -581,14 +579,20 @@ define(
                                                     redirectOnSuccessAction.execute();
                                                 }
                                             });
-                                        });
                                 }
                             }
-                        ).always(
-                        function () {
-                            self.isPlaceOrderActionAllowed(true);
-                        }
-                    );
+                        )
+                        .fail(function (error) {
+
+                            self.messageContainer.addErrorMessage({
+                                message: error.message || 'The card payment could not be completed.'
+                            });
+                        })
+                        .always(
+                            function () {
+                                self.isPlaceOrderActionAllowed(true);
+                            }
+                        );
 
 
 

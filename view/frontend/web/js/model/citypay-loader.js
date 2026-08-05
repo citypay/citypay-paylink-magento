@@ -41,9 +41,7 @@ define(['jquery'], function ($) {
 
         var script = document.createElement('script');
 
-        // script.src = 'https://js.citypay.com/v2/loader/2.0.12/citypay.js';
-        script.src="https://dev.citypay.local:8080/loader/citypay.js"
-        script.setAttribute('data-channel', 'local');
+        script.src = 'https://js.citypay.com/v2/loader/2.0.12/citypay.js';
 
         script.async = true;
 
