@@ -55,4 +55,12 @@
             <resource ref="anonymous" />
         </resources>
     </route>
+
+
+    <route url="/V1/citypay/checkout/context" method="POST">
+        <service class="CityPay\Paylink\Api\ElementsPaymentManagementInterface" method="createCheckoutContext"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
 </routes>

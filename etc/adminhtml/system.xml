@@ -110,6 +110,22 @@
                         <field id="payment_mode">elements</field>
                     </depends>
                 </field>
+                <field id="checkout_context" translate="label" type="select" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Express Checkout</label>
+                    <source_model>CityPay\Paylink\Model\Adminhtml\Source\CheckoutCtxEnabledOptions</source_model>
+                    <depends>
+                        <field id="active">1</field>
+                        <field id="payment_mode">elements</field>
+                    </depends>
+                </field>
+                <field id="checkout_context_payment_option" translate="label" type="multiselect" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Payment Method</label>
+                    <source_model>CityPay\Paylink\Model\Adminhtml\Source\CheckoutCtxPaymentMethod</source_model>
+                    <depends>
+                        <field id="active">1</field>
+                        <field id="checkout_context">enabled</field>
+                    </depends>
+                </field>
             </group>
         </section>
     </system>

@@ -16,6 +16,10 @@ interface ElementsPaymentManagementInterface
      */
     public function createSession();
 
+    /**
+     * @return string
+     */
+    public function createCheckoutContext();
 
     /**
      * @param string $paymentIntentId

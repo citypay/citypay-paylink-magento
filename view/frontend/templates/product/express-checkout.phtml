@@ -1,0 +1,26 @@
+<?php
+/** @var \CityPay\Paylink\Block\Product\ExpressCheckout $block */
+?>
+
+<?php if ($block->isEnabled()): ?>
+    <div id="citypay-product-express-checkout">
+        <div id="citypay-product-apple-pay"></div>
+        <div id="citypay-product-express-message"
+             role="alert"></div>
+    </div>
+
+    <script type="text/x-magento-init">
+        {
+            "#citypay-product-express-checkout": {
+                "CityPay_Paylink/js/view/product/express-checkout": {
+                    "origin": <?= /* @noEscape */ json_encode(
+            $block->getStorefrontOrigin()
+        ) ?>,
+                  "checkoutContextUrl": <?= /* @noEscape */ json_encode(
+            $block->getCheckoutContextUrl()
+        ) ?>
+        }
+    }
+}
+    </script>
+<?php endif; ?>

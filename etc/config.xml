@@ -24,6 +24,8 @@
                 <testmode>0</testmode>
                 <payment_mode>paylink</payment_mode>
                 <elements_style>row</elements_style>
+                <checkout_context>disabled</checkout_context>
+                <checkout_context_payment_option>apple-pay</checkout_context_payment_option>
             </citypay_gateway>
         </payment>
     </default>

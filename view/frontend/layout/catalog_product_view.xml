@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- Magento applies this layout to every product-detail page-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="product.info.main">
+            <block class="CityPay\Paylink\Block\Product\ExpressCheckout"
+                   name="citypay.product.express.checkout"
+                   template="CityPay_Paylink::product/express-checkout.phtml"
+                   after="product.info"/>
+        </referenceContainer>
+    </body>
+</page>
