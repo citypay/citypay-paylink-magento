@@ -19,14 +19,16 @@ interface ElementsPaymentManagementInterface
 
     /**
      * @param string $paymentIntentId
+     * @param int $orderId
      * @return string
      */
-    public function authorise($paymentIntentId);
+    public function authorise($paymentIntentId, $orderId);
 
 
     /**
      * @param string $paymentIntentId
+     * @param int $orderId
      * @return string
      */
-    public function verify($paymentIntentId);
+    public function verify($paymentIntentId, $orderId);
 }

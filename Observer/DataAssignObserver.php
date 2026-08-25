@@ -36,7 +36,7 @@ class DataAssignObserver extends AbstractDataAssignObserver
         }
 
         foreach (
-            ['transaction_result', 'payment_intent_id', 'payment_channel']
+            ['payment_intent_id', 'payment_channel']
             as $key
         ) {
             if (

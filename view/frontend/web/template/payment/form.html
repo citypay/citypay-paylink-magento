@@ -33,6 +33,15 @@
                     align-items: center;
                     gap: 12px;
                     width: 100%;
+                    max-height: 0;
+                    overflow: hidden;
+                    visibility: hidden;
+                }
+
+                .citypay-wallet-grid--ready {
+                    max-height: none;
+                    overflow: visible;
+                    visibility: visible;
                 }
 
                 .citypay-wallet-slot {
@@ -141,10 +150,19 @@
                 <button class="action primary checkout"
                         type="submit"
                         data-bind="
-                        click: placeOrder,
-                        attr: {title: $t('Place Order')}
-                        ">
-                    <span data-bind="i18n: 'Place Order'"></span>
+                          click: placeOrder,
+                          enable: isPlaceOrderActionAllowed,
+                          css: {'disabled': !isPlaceOrderActionAllowed()},
+                          attr: {
+                              title: isPlaceOrderActionAllowed()
+                                  ? $t('Place Order')
+                                  : $t('Processing payment'),
+                              'aria-busy': !isPlaceOrderActionAllowed()
+                          }
+                      ">
+                    <span data-bind="
+                        text: isPlaceOrderActionAllowed() ? $t('Place Order') : $t('Processing payment...')
+                    "></span>
                 </button>
             </div>
         </div>

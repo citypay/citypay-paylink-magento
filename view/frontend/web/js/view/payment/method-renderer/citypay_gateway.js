@@ -15,9 +15,10 @@ define(
         'Magento_Checkout/js/action/redirect-on-success',
         'Magento_Checkout/js/model/url-builder',
         'mage/storage',
-        'CityPay_Paylink/js/model/citypay-loader'
+        'CityPay_Paylink/js/model/citypay-loader',
+        'Magento_Checkout/js/model/quote',
     ],
-    function (require, $,Component, placeOrderAction,getplTokenAction,additionalValidators,redirectOnSuccessAction,  urlBuilder, storage, loadCityPay) {
+    function (require, $,Component, placeOrderAction,getplTokenAction,additionalValidators,redirectOnSuccessAction,  urlBuilder, storage, loadCityPay, quote) {
         'use strict';
 
         const config = window.checkoutConfig.payment.citypay_gateway;
@@ -27,21 +28,21 @@ define(
         return Component.extend({
             defaults: {
                 template: 'CityPay_Paylink/payment/form',
-                transactionResult: '',
                 orderId: '',
                 paymentChannel: 'card'
             },
 
             initObservable: function () {
-
-                this._super()
-                    .observe([
-                        'transactionResult'
-                    ]);
+                this._super();
 
                 this.isChecked.subscribe(function () {
                     this.loadCityPayIfSelected();
                 }, this);
+
+                this.totalsSubscription = quote.totals.subscribe(
+                    this.onQuoteTotalsChanged,
+                    this
+                );
 
                 return this;
             },
@@ -58,7 +59,6 @@ define(
                 return {
                     'method': this.item.method,
                     'additional_data': {
-                        'transaction_result': this.transactionResult(),
                         'orderId': this.orderId,
                         payment_intent_id: this.paymentIntentId,
                         payment_channel: this.paymentChannel || 'card'
@@ -77,6 +77,64 @@ define(
 
             isElementsMode: function () {
                 return this.getPaymentMode() === 'elements';
+            },
+
+            getInitialAmount: function (totals) {
+                let amount;
+                let currency;
+
+                if (!totals) {
+                    return null;
+                }
+
+                amount = Number(totals.grand_total);
+                currency = String(totals.quote_currency_code || '').toUpperCase();
+
+                if (!Number.isFinite(amount) || currency !== 'GBP') {
+                    return null;
+                }
+
+                // Magento’s total is converted from pounds to pence
+                return Math.round(amount * 100);
+            },
+
+            onQuoteTotalsChanged: function (totals) {
+                let quoteAmount;
+                let sessionAmount;
+
+                // Avoid repeated reload attempts.
+                if (this.reloadingForTotals) {
+                    return;
+                }
+
+                // This logic applies only to Elements.
+                if (!this.isElementsMode()) {
+                    return;
+                }
+
+                // No CityPay session exists yet. When one is eventually created, the backend will use the latest Magento total.
+                if (!this.elementsSession) {
+                    return;
+                }
+
+                quoteAmount = this.getInitialAmount(totals);
+                sessionAmount = Number(this.elementsSession.amount);
+
+                if (quoteAmount === null || !Number.isFinite(sessionAmount)) {
+                    return;
+                }
+
+                // The active intent still has the correct amount.
+                if (quoteAmount === sessionAmount) {
+                    return;
+                }
+
+                // The intent amount is now stale, usually because a coupon was applied or removed.
+                this.reloadingForTotals = true;
+                this.isPlaceOrderActionAllowed(false);
+
+                window.location.reload();
+
             },
 
             loadCityPayIfSelected: function () {
@@ -117,7 +175,8 @@ define(
                 return storage.post(
                     urlBuilder.createUrl('/citypay/elements/authorise', {}),
                     JSON.stringify({
-                        paymentIntentId: paymentIntentId
+                        paymentIntentId: paymentIntentId,
+                        orderId: this.orderId,
                     })
                 ).then(function (response) {
                     return typeof response === 'string' ? JSON.parse(response) : response;
@@ -129,10 +188,200 @@ define(
                 return storage.post(
                     urlBuilder.createUrl('/citypay/elements/verify', {}),
                     JSON.stringify({
-                        paymentIntentId: paymentIntentId
+                        paymentIntentId: paymentIntentId,
+                        orderId: this.orderId,
                     })
                 ).then(function (response) {
                     return typeof response === 'string' ? JSON.parse(response) : response;
+                });
+            },
+
+            setWalletVisibility: function (containerId, visible) {
+                const walletGrid = document.getElementById('citypay-wallet-grid');
+                const walletContainer = document.getElementById(containerId);
+
+                if (walletContainer) {
+                    walletContainer.style.display = visible ? '' : 'none';
+                    if (!visible) {
+                        walletContainer.textContent = '';
+                    }
+                }
+
+                if (visible && walletGrid) {
+                    walletGrid.classList.add('citypay-wallet-grid--ready');
+                }
+            },
+
+            waitForWalletFactory: function (elements, factoryName, initialiseWallet) {
+                let attempts = 0;
+
+                function tryInitialise() {
+                    if (typeof elements[factoryName] === 'function') {
+                        initialiseWallet();
+                    } else if (++attempts < 100) {
+                        window.setTimeout(tryInitialise, 100);
+                    } else {
+                        console.info('CityPay wallet is unavailable: ' + factoryName);
+                    }
+                }
+
+                tryInitialise();
+            },
+
+            initOptionalWallets: function (elements) {
+                const self = this;
+                const amount = Number(this.elementsSession.amount);
+
+                if (!Number.isFinite(amount) || amount <= 0) {
+                    console.warn('CityPay wallets were not loaded because the amount is invalid.');
+                    return;
+                }
+
+                this.waitForWalletFactory(elements, 'applePay', function () {
+                    try {
+                        self.applePay = elements.applePay({
+                            identifier: 'applepay-' + amount,
+                            element: '#apple-pay',
+                            appearance: {type: 'check-out', style: 'dark'},
+                            total: {amount: amount, label: 'GBP'}
+                        });
+
+                        self.applePay.onAuthoriseStart(function () {
+                            self.isPlaceOrderActionAllowed(false);
+                        });
+                        self.applePay.onAuthoriseEnd(async function (event) {
+                            if (!event.success) {
+                                self.isPlaceOrderActionAllowed(true);
+                                return;
+                            }
+
+                            self.paymentChannel = 'apple_pay';
+
+                            try {
+                                // Place the Magento order
+                                self.orderId = await self.getPlaceOrderDeferredObject();
+
+                                const verifyResult = await self.verify(
+                                    self.paymentIntentId
+                                );
+
+                                if (verifyResult.approved !== true) {
+                                    throw new Error('Apple Pay payment could not be verified.');
+                                }
+
+                                self.afterPlaceOrder();
+
+                                if (self.redirectAfterPlaceOrder) {
+                                    redirectOnSuccessAction.execute();
+                                }
+                            } catch (error) {
+                                self.messageContainer.addErrorMessage({
+                                    message:
+                                        error.message ||
+                                        'Apple Pay could not be completed.'
+                                });
+
+                                self.isPlaceOrderActionAllowed(true);
+                            }
+                        });
+
+                        Promise.resolve(self.applePay.init())
+                            .then(function () { return self.applePay.awaitReady(); })
+                            .then(function () { self.setWalletVisibility('apple-pay', true); })
+                            .catch(function (error) {
+                                self.setWalletVisibility('apple-pay', false);
+                                console.info('Apple Pay is unavailable:', error);
+                            });
+                    } catch (error) {
+                        self.setWalletVisibility('apple-pay', false);
+                        console.info('Apple Pay could not be initialised:', error);
+                    }
+                });
+
+                this.waitForWalletFactory(elements, 'googlePay', function () {
+                    try {
+                        const googlePayAmount = amount / 100;
+
+                        self.googlePay = elements.googlePay({
+                            element: '#google-pay',
+                            identifier: 'googlePay-' + googlePayAmount,
+                            merchantId: self.elementsSession.googlepayMID,
+                            total: {label: 'GBP', amount: googlePayAmount},
+                            appearance: {type: 'checkout', style: 'black', buttonSizeMode: 'fill'},
+                            emailAddressRequired: true,
+                            billingAddressRequired: true
+                        });
+
+                        self.googlePay.onTokeniseEnd(async function () {
+                            self.isPlaceOrderActionAllowed(false);
+                            self.paymentChannel = 'google_pay';
+
+                            try {
+                                // Create Magento order first and retain its ID.
+                                self.orderId = await self.getPlaceOrderDeferredObject();
+
+                                const attach = await self.googlePay.attach({
+                                    intentId: self.paymentIntentId
+                                });
+
+                                if (attach.status !== 'requires_customer_confirmation') {
+                                    throw new Error('Unexpected Google Pay attach status: ' + attach.status);
+                                }
+
+                                const confirmResult = await self.googlePay.confirm({
+                                    intentId: self.paymentIntentId
+                                });
+
+                                if (confirmResult.status !== 'requires_authorisation') {
+                                    throw new Error('Unexpected Google Pay status: ' + confirmResult.status);
+                                }
+
+                                const auth = await self.authorisePayment(self.paymentIntentId);
+
+                                if (auth.authorised !== true && auth.authorised !== 'true') {
+                                    throw new Error('Google Pay authorisation was declined.');
+                                }
+
+                                const verifyResult = await self.verify(self.paymentIntentId);
+                                if (verifyResult.approved !== true) {
+                                    throw new Error('Google Pay payment could not be verified.');
+                                }
+
+                                self.afterPlaceOrder();
+
+                                if (self.redirectAfterPlaceOrder) {
+                                    redirectOnSuccessAction.execute();
+                                }
+
+                            } catch (error) {
+                                self.messageContainer.addErrorMessage({
+                                    message: error.message || 'Google Pay could not be completed.'
+                                });
+                                self.isPlaceOrderActionAllowed(true);
+                            }
+                        });
+                        self.googlePay.onCancel(function () {
+                            self.isPlaceOrderActionAllowed(true);
+                            self.messageContainer.addErrorMessage({message: 'Payment cancelled by user'});
+                        });
+                        self.googlePay.onError(function () {
+                            self.isPlaceOrderActionAllowed(true);
+                            self.messageContainer.addErrorMessage({
+                                message: 'An error occurred while processing Google Pay.'
+                            });
+                        });
+
+                        Promise.resolve(self.googlePay.init())
+                            .then(function () { return self.googlePay.awaitReady(); })
+                            .then(function () { self.setWalletVisibility('google-pay', true); })
+                            .catch(function (error) {
+                                self.setWalletVisibility('google-pay', false);
+                                console.info('Google Pay is unavailable:', error);
+                            });
+                    } catch (error) {
+                        self.setWalletVisibility('google-pay', false);
+                        console.info('Google Pay could not be initialised:', error);
+                    }
                 });
             },
 
@@ -194,273 +443,13 @@ define(
                             });
                             console.log("Elements: init...");
 
-                            const amount = Number(self.elementsSession.amount);
-                            const GooglePayMerchantId = self.elementsSession.googlepayMID;
-
-                            if (!Number.isFinite(amount) || amount <= 0) {
-                                throw new Error(
-                                    'Invalid Apple Pay amount: ' + self.elementsSession.amount
-                                );
-                            }
-
-                            const googlePayAmount = amount / 100;
-
-                            self.applePay = elements.applePay({
-                                identifier: 'applepay-' + amount,
-                                element: '#apple-pay',
-                                appearance: {
-                                    type: 'check-out',
-                                    style: 'dark',
-                                },
-                                total: {
-                                    amount: amount,
-                                    label: 'GBP'
-                                }
-                            });
-
-                            self.googlePay = elements.googlePay({
-                                element: '#google-pay',
-                                identifier: 'googlePay-' + googlePayAmount,
-                                merchantId: GooglePayMerchantId,
-                                total: {
-                                    label: 'GBP',
-                                    amount: googlePayAmount
-                                },
-                                appearance: {
-                                    type: 'checkout',
-                                    style: 'black',
-                                    buttonSizeMode: 'fill'
-                                },
-                                emailAddressRequired: true,
-                                billingAddressRequired: true,
-                            });
-
-                            self.applePay.onAuthoriseStart(function () {
-                                // Prevent duplicate checkout submissions while Apple Pay is processing.
-                                self.isPlaceOrderActionAllowed(false);
-                            });
-
-                            self.applePay.onAuthoriseEnd(function (event) {
-                                if (!event.success) {
-                                    // Allow the customer to try again.
-                                    self.isPlaceOrderActionAllowed(true);
-                                    return;
-                                }
-
-                                self.paymentChannel = 'apple_pay';
-
-                                // Keep it false while Magento verifies CityPay and places the order.
-                                self.getPlaceOrderDeferredObject()
-                                    .done(function () {
-                                        self.afterPlaceOrder();
-                                        redirectOnSuccessAction.execute();
-                                    })
-                                    .fail(function () {
-                                        self.isPlaceOrderActionAllowed(true);
-                                        self.messageContainer.addErrorMessage({
-                                            message: 'Your payment was received, but the order could not be created. Please contact support.'
-                                        });
-                                    });
-                            });
-
-                            self.googlePay.onTokeniseEnd(async function () {
-                                self.isPlaceOrderActionAllowed(false);
-                                self.paymentChannel = 'google_pay';
-
-                                try {
-                                    const attach = await self.googlePay.attach({intentId: self.paymentIntentId});
-
-                                    if (attach.status !== 'requires_customer_confirmation') {
-                                        return;
-                                    }
-
-                                    const confirmResult = await self.googlePay.confirm({
-                                        intentId: self.paymentIntentId
-                                    });
-
-                                    if (confirmResult.status !== 'requires_authorisation') {
-                                        throw new Error('Unexpected Google Pay status: ' + confirmResult.status);
-                                    }
-
-                                    const auth = await self.authorisePayment(self.paymentIntentId);
-
-                                    if (auth.authorised !== true && auth.authorised !== 'true') {
-                                        throw new Error('Google Pay authorisation was declined.');
-                                    }
-
-                                    const verifyResult = await self.verify(self.paymentIntentId);
-
-                                    const approved =
-                                        verifyResult.status === 'success' ||
-                                        verifyResult.authen_result === 'Y' ||
-                                        verifyResult.result === 'Verified' ||
-                                        verifyResult.trans_status === 'Verified';
-
-                                    if (!approved) {
-                                        throw new Error('Google Pay payment could not be verified.');
-                                    }
-
-                                    // Record the selected wallet before submitting the Magento order.
-                                    self.paymentChannel = 'google_pay';
-
-                                    await self.getPlaceOrderDeferredObject();
-
-                                    self.afterPlaceOrder();
-
-                                    if (self.redirectAfterPlaceOrder) {
-                                        redirectOnSuccessAction.execute();
-                                    }
-                                } catch (error) {
-                                    self.messageContainer.addErrorMessage({
-                                        message: error.message || 'Google Pay could not be completed.'
-                                    });
-
-                                    self.isPlaceOrderActionAllowed(true);
-                                }
-                            });
-
-                            self.googlePay.onCancel(function () {
-                                self.isPlaceOrderActionAllowed(true);
-
-                                self.messageContainer.addErrorMessage({
-                                    message: 'Payment cancelled by user'
-                                });
-
-                                console.log("Payment cancelled by user.");
-                            });
-
-                            self.googlePay.onError(function (error) {
-
-                                self.isPlaceOrderActionAllowed(true);
-
-                                self.messageContainer.addErrorMessage({
-                                    message: 'An error occurred while processing Google Pay.'
-                                });
-                            });
-
                             return self.card.init()
                                 .then(function () {
-                                    console.log("Apple Pay: init...");
-                                    return self.applePay.init();
-                                })
-                                .then(function() {
-                                    console.log('Google Pay: init...');
-                                    return self.googlePay.init();
+                                    return self.card.awaitReady();
                                 })
                                 .then(function () {
-                                    console.log("ApplePay, Google Pay, Elements: await...")
-                                    return Promise.all([
-                                        self.card.awaitReady(),
-                                        self.applePay.awaitReady(),
-                                        self.googlePay.awaitReady()
-                                    ]);
-                                }).then(function () {
-                                    const walletGrid = document.querySelector(
-                                        '#citypay-wallet-grid'
-                                    );
-                                    const applePayContainer = document.querySelector(
-                                        '#apple-pay'
-                                    );
-                                    const applePayButton = applePayContainer
-                                        ? applePayContainer.querySelector(
-                                            'button.apple-pay-button'
-                                        )
-                                        : null;
-                                    const googlePayContainer = document.querySelector(
-                                        '#google-pay'
-                                    );
-                                    const googlePayButton = googlePayContainer
-                                        ? googlePayContainer.querySelector('button.gpay-button')
-                                        : null;
-                                    const googlePayWrapper = googlePayButton
-                                        ? googlePayButton.parentElement
-                                        : null;
-
-                                    if (walletGrid) {
-                                        walletGrid.classList.add(
-                                            'citypay-wallet-grid--ready'
-                                        );
-                                    }
-
-                                    if (applePayButton) {
-                                        applePayButton.style.setProperty(
-                                            '-apple-pay-button-style',
-                                            'black'
-                                        );
-
-                                        Object.assign(applePayButton.style, {
-                                            display: 'block',
-                                            width: '100%',
-                                            maxWidth: 'none',
-                                            height: '42px',
-                                            minHeight: '42px',
-                                            maxHeight: '42px',
-                                            boxSizing: 'border-box',
-                                            flex: '1 1 auto',
-                                            margin: '0',
-                                            padding: '0',
-                                            border: '0'
-                                        });
-                                    }
-
-                                    if (googlePayButton) {
-                                        if (
-                                            googlePayWrapper &&
-                                            googlePayWrapper !== googlePayContainer
-                                        ) {
-                                            Object.assign(googlePayWrapper.style, {
-                                                alignItems: 'stretch',
-                                                width: '100%',
-                                                maxWidth: 'none',
-                                                height: '42px',
-                                                margin: '0'
-                                            });
-
-                                            googlePayWrapper.style.setProperty(
-                                                'display',
-                                                'flex',
-                                                'important'
-                                            );
-                                            googlePayWrapper.style.setProperty(
-                                                'width',
-                                                '100%',
-                                                'important'
-                                            );
-                                            googlePayWrapper.style.setProperty(
-                                                'max-width',
-                                                'none',
-                                                'important'
-                                            );
-                                        }
-
-                                        Object.assign(googlePayButton.style, {
-                                            display: 'block',
-                                            width: '100%',
-                                            maxWidth: 'none',
-                                            height: '42px',
-                                            minHeight: '42px',
-                                            maxHeight: '42px',
-                                            boxSizing: 'border-box',
-                                            flex: '1 1 auto',
-                                            margin: '0'
-                                        });
-
-                                        googlePayButton.style.setProperty(
-                                            'width',
-                                            '100%',
-                                            'important'
-                                        );
-                                        googlePayButton.style.setProperty(
-                                            'max-width',
-                                            'none',
-                                            'important'
-                                        );
-                                        googlePayButton.style.setProperty(
-                                            'height',
-                                            '42px',
-                                            'important'
-                                        );
-                                    }
+                                    self.initOptionalWallets(elements);
+                                    return self.card;
                                 });
                         })
                         .then(function () {
@@ -495,36 +484,11 @@ define(
                     this.getPlaceOrderDeferredObject()
                         .then(
                             function (value) {
-                                //alert('orderId '+value)
-                                //self.afterPlaceOrder();
                                 self.orderId = value;
 
                                 if (self.isPaylinkMode()) {
                                     console.log("Placing order for Paylink")
                                     self.getPLTokenDeferredObject();
-                                    /*
-                                    .then(function(value){
-                                        alert('pltoken result'+value)
-                                    })
-                                    .done(
-                                        function () {
-                                            self.afterPlaceOrder();
-
-                                            if (self.redirectAfterPlaceOrder) {
-                                                redirectOnSuccessAction.execute();
-                                            }
-                                        }
-                                    ).always(
-                                    function () {
-                                        self.isPlaceOrderActionAllowed(true);
-                                    }
-                                );*/
-                                    /*
-                                                                    if (self.redirectAfterPlaceOrder) {
-                                                                        redirectOnSuccessAction.execute();
-                                                                    }
-
-                                     */
                                 } else if (self.isElementsMode()) {
                                     console.log("Placing Order for ElementsPaymentManagement");
 
@@ -559,13 +523,7 @@ define(
                                             }).then(function (verifyResult) {
                                                 console.log("CityPay:Elements: verified result");
 
-                                                const approved =
-                                                    verifyResult.status === 'success' ||
-                                                    verifyResult.authen_result === 'Y' ||
-                                                    verifyResult.result === 'Verified' ||
-                                                    verifyResult.trans_status === 'Verified';
-
-                                                if (!approved) {
+                                                if (verifyResult.approved !== true) {
                                                     throw new Error('CityPay payment was not approved.');
                                                 }
 
@@ -615,14 +573,6 @@ define(
                     //alert('$ when2'),
                     getplTokenAction(this.getData(),this.messageContainer)
                 );
-            },
-            getTransactionResults: function() {
-                return _.map(window.checkoutConfig.payment.citypay_gateway.transactionResults, function(value, key) {
-                    return {
-                        'value': key,
-                        'transaction_result': value
-                    }
-                });
             },
         });
     }

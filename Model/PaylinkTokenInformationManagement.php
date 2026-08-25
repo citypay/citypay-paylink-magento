@@ -187,8 +187,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             $this->logger->info('Digest mismatch');
             throw new Exception('Digest mismatch');
         }
-
-        $this->logger->debug('CityPay:Paylink:validatePostbackDigest:Digest matched "' . $check . '"');
         return true;
 
     }
@@ -222,9 +220,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
             $postbackString = $this->_request->getContent();
             $postbackData = json_decode($postbackString);
-
-            $this->logger->debug('CityPay:Paylink:processPaylinkPostback: ' . $postbackString);
-
 
             $path = 'payment/citypay_gateway/licencekey';
             $this->licence_key = $this->scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
@@ -304,9 +299,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                             )
                         );
 
-                        $this->logger->debug('customer_email = ' . $order->getCustomerEmail());
-
-
                         // force a synchronous sending (bypass async/cron entirely)
                         try {
                             $sent = $orderSender->send($order,true);
@@ -368,7 +360,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
     {
         // obtain the order id
         $ad = $payment->getAdditionalData();
-        $this->logger->debug('CityPay:Paylink:buildRequestData:ad ' . json_encode($ad));
         $orderId = $ad['orderId'];
 
         // obtain the order
@@ -471,7 +462,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
      */
     public function processHttp(TransferInterface $transferObject)
     {
-        $this->logger->debug('CityPay:Paylink:processHttp:Request' . json_encode($transferObject->getBody()));
         $ch = curl_init($transferObject->getUri());
         curl_setopt($ch, CURLOPT_POST, $transferObject->getMethod() == 'POST');
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($transferObject->getBody()));
@@ -479,10 +469,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $response = curl_exec($ch);
         curl_close($ch);
-        $this->logger->debug('CityPay:Paylink:processHttp:Response' . $response);
         return $response;
     }
-
 
     /**
      * Get logger instance
