@@ -248,6 +248,8 @@ define(
 
                         self.applePay.onAuthoriseStart(function () {
                             self.isPlaceOrderActionAllowed(false);
+
+                            return self.placePendingElementsOrder('apple_pay');
                         });
                         self.applePay.onAuthoriseEnd(async function (event) {
                             if (!event.success) {
@@ -255,11 +257,10 @@ define(
                                 return;
                             }
 
-                            self.paymentChannel = 'apple_pay';
-
                             try {
-                                // Place the Magento order
-                                self.orderId = await self.getPlaceOrderDeferredObject();
+                                self.orderId = await self.placePendingElementsOrder(
+                                    'apple_pay'
+                                );
 
                                 const verifyResult = await self.verify(
                                     self.paymentIntentId
@@ -314,11 +315,12 @@ define(
 
                         self.googlePay.onTokeniseEnd(async function () {
                             self.isPlaceOrderActionAllowed(false);
-                            self.paymentChannel = 'google_pay';
 
                             try {
                                 // Create Magento order first and retain its ID.
-                                self.orderId = await self.getPlaceOrderDeferredObject();
+                                self.orderId = await self.placePendingElementsOrder(
+                                    'google_pay'
+                                );
 
                                 const attach = await self.googlePay.attach({
                                     intentId: self.paymentIntentId
@@ -481,7 +483,9 @@ define(
                     }
 
                     this.isPlaceOrderActionAllowed(false);
-                    this.getPlaceOrderDeferredObject()
+                    (self.isElementsMode()
+                        ? self.placePendingElementsOrder('card')
+                        : self.getPlaceOrderDeferredObject())
                         .then(
                             function (value) {
                                 self.orderId = value;
@@ -567,6 +571,36 @@ define(
                     //alert('$ when1'),
                     placeOrderAction(this.getData(), this.messageContainer)
                 );
+            },
+            placePendingElementsOrder: function (paymentChannel) {
+                const self = this;
+
+                if (this.orderId) {
+                    return $.Deferred().resolve(this.orderId).promise();
+                }
+
+                if (this.pendingElementsOrder) {
+                    return this.pendingElementsOrder.promise();
+                }
+
+                // getData() is evaluated by placeOrderAction, so record the
+                // actual Elements channel before submitting the Magento order.
+                this.paymentChannel = paymentChannel;
+                this.pendingElementsOrder = $.Deferred();
+
+                this.getPlaceOrderDeferredObject()
+                    .done(function (orderId) {
+                        self.orderId = orderId;
+                        self.pendingElementsOrder.resolve(orderId);
+                    })
+                    .fail(function (error) {
+                        // Keep the rejected promise for this page lifecycle.
+                        // Retrying implicitly from a later wallet callback
+                        // could create an order only after funds were taken.
+                        self.pendingElementsOrder.reject(error);
+                    });
+
+                return this.pendingElementsOrder.promise();
             },
             getPLTokenDeferredObject:function(){
                 return $.when(

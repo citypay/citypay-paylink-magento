@@ -11,6 +11,7 @@ use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order\Payment;
+use Magento\Sales\Model\Order\Email\Sender\OrderSender;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -124,7 +125,8 @@ class ElementsPaymentManagementOrderIntentTest extends TestCase
             $this->createMock(LoggerInterface::class),
             new MinorUnitConverter(),
             $this->createMock(CartRepositoryInterface::class),
-            $orderRepository
+            $orderRepository,
+            $this->createMock(OrderSender::class)
         );
     }
 

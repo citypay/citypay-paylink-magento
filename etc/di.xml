@@ -48,6 +48,7 @@
     <virtualType name="CityPayGatewayCommandPool" type="Magento\Payment\Gateway\Command\CommandPool">
         <arguments>
             <argument name="commands" xsi:type="array">
+                <item name="initialize" xsi:type="string">CityPay\Paylink\Gateway\Command\InitializeCommand</item>
                 <item name="authorize" xsi:type="string">CityPayGatewayAuthorizeCommand</item>
                 <!--<item name="capture" xsi:type="string">CityPayGatewayCaptureCommand</item>
                 <item name="void" xsi:type="string">CityPayGatewayVoidCommand</item>-->

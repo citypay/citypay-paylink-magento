@@ -19,6 +19,8 @@ use mysql_xdevapi\Exception;
  */
 class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkTokenInformationManagementInterface2
 {
+    private const PAYLINK_TRANSACTION_KEY = 'citypay_paylink_processed_transaction';
+
 
     /**
      * @var \Magento\Checkout\Model\Session
@@ -227,15 +229,63 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             if ($this->validatePostbackDigest($postbackData)) {
 
                 $identifier = $postbackData->identifier;
-                $transno = $postbackData->transno;
+                $transno = trim((string) $postbackData->transno);
+
+                if (!preg_match('/^[0-9]+$/', $transno) || (int) $transno <= 0) {
+                    throw new \UnexpectedValueException('Invalid CityPay Paylink transaction number.');
+                }
+
                 $amountAuthd = $postbackData->amount / 100.0;
                 $order = $this->findOrder($identifier);
                 $payment = $order->getPayment(); #OrderPaymentInterface
 
                 $order_status = $order->getStatus();
+                $order_state = $order->getState();
+                $authorised = filter_var(
+                    $postbackData->authorised ?? false,
+                    FILTER_VALIDATE_BOOLEAN
+                );
+                $registeredTransaction = (string) $payment->getAdditionalInformation(
+                    self::PAYLINK_TRANSACTION_KEY
+                );
+                $postbackAction = $this->determinePostbackAction(
+                    $authorised,
+                    (string) $order_state,
+                    (string) $order_status,
+                    $registeredTransaction,
+                    $transno
+                );
 
-                if ($postbackData->authorised == 'true' && $order_status !== 'processing') {
+                if ($postbackAction === 'duplicate') {
+                    $this->logger->info(
+                        'Ignoring duplicate successful Paylink postback.',
+                        ['orderId' => $order->getEntityId(), 'transactionNumber' => $transno]
+                    );
+                    return;
+                }
+
+                if ($postbackAction === 'conflict') {
+                    throw new \UnexpectedValueException(
+                        'A different Paylink transaction is already registered for this order.'
+                    );
+                }
+
+                if ($postbackAction === 'ignore_decline') {
+                    $this->logger->warning(
+                        'Ignoring unsuccessful Paylink postback for an order that is not awaiting payment.',
+                        ['orderId' => $order->getEntityId(), 'transactionNumber' => $transno]
+                    );
+                    return;
+                }
+
+                if ($postbackAction === 'authorise') {
+                    $payment->setTransactionId($transno);
+                    $payment->setIsTransactionClosed(false);
                     $payment->registerAuthorizationNotification($amountAuthd);
+                    $payment->setAdditionalInformation(
+                        self::PAYLINK_TRANSACTION_KEY,
+                        $transno
+                    );
                     # open for settlement, assigned to a batch or settled
                     $this->logger->info('Transaction authorised');
 
@@ -322,7 +372,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
                         }
                     }
 
-                } else if ($order_status !== 'canceled') {
+                } else {
                     $this->logger->info('Order cancelled due to transaction not being authorised');
                     $orderState = Order::STATE_CANCELED;
                     $order->setState($orderState)->setStatus($orderState);
@@ -349,6 +399,54 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         } finally {
             $this->logger->debug('CityPay:Paylink:processPaylinkPostback End');
         }
+    }
+
+    private function determinePostbackAction(
+        bool $authorised,
+        string $orderState,
+        string $orderStatus,
+        string $registeredTransaction,
+        string $transactionNumber
+    ): string {
+        if ($authorised) {
+            if ($registeredTransaction === $transactionNumber) {
+                return 'duplicate';
+            }
+
+            if ($registeredTransaction !== '') {
+                return 'conflict';
+            }
+
+            // Orders paid before the transaction marker was introduced must
+            // also treat a retried success as a no-op.
+            if ($orderState === Order::STATE_PROCESSING
+                || $orderStatus === Order::STATE_PROCESSING
+            ) {
+                return 'duplicate';
+            }
+
+            return 'authorise';
+        }
+
+        // A decline may cancel only an order that is genuinely awaiting
+        // payment. It must never reverse a successful/terminal order.
+        if ($registeredTransaction !== '') {
+            return 'ignore_decline';
+        }
+
+        if (in_array(
+            $orderState,
+            [Order::STATE_NEW, Order::STATE_PENDING_PAYMENT],
+            true
+        ) || in_array(
+            $orderStatus,
+            [Order::STATE_NEW, Order::STATE_PENDING_PAYMENT],
+            true
+        )) {
+            return 'cancel';
+        }
+
+        return 'ignore_decline';
     }
 
     private function trimString(&$item, $key)
