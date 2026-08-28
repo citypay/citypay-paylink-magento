@@ -6,7 +6,7 @@ use Magento\Payment\Gateway\CommandInterface;
 use Magento\Sales\Model\Order;
 
 /**
- * Creates the Magento order without pretending that CityPay has authorised it.
+ * Creates the Magento order
  */
 class InitializeCommand implements CommandInterface
 {

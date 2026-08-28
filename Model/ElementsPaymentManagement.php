@@ -59,6 +59,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
 
         // Verify this is the correct order
         $order = $this->validateOrderIntent($paymentIntentId, $orderId);
+        $this->logger->debug("CityPay:Elements: order validated");
 
         // Authorise payment
         $result = $this->normalisePaymentIntentResponse(
@@ -66,6 +67,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         );
 
         if ($this->isAuthorised($result)) {
+            $this->logger->debug("CityPay:Elements: payment authorised, updating order");
             $this->registerAuthorisation($order, $result);
         }
 
@@ -105,11 +107,8 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             'transactionNumber' => (int) ($result['transno'] ?? 0),
         ];
 
-        // The browser callback is not proof of payment. Only transition Magento
-        // after CityPay has verified the real transaction on the backend.
         $this->registerVerifiedPayment($order, $result);
-
-        $this->logger->info('CityPay payment verified', $response);
+        $this->logger->debug('CityPay payment verified', $response);
 
         return json_encode($response);
     }
@@ -395,9 +394,6 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             );
         }
 
-        // Apple Pay is authorised inside Elements and does not call this
-        // module's authorise endpoint, so verification must also register the
-        // missing Magento authorisation when necessary.
         $this->registerAuthorisation($order, $result);
 
         $payment->registerCaptureNotification(

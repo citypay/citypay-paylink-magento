@@ -428,8 +428,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             return 'authorise';
         }
 
-        // A decline may cancel only an order that is genuinely awaiting
-        // payment. It must never reverse a successful/terminal order.
+        // A decline may cancel only an order that is genuinely awaiting payment. It must never reverse a successful/terminal order.
         if ($registeredTransaction !== '') {
             return 'ignore_decline';
         }

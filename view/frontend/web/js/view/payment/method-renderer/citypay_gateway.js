@@ -595,8 +595,7 @@ define(
                     })
                     .fail(function (error) {
                         // Keep the rejected promise for this page lifecycle.
-                        // Retrying implicitly from a later wallet callback
-                        // could create an order only after funds were taken.
+                        // Retrying implicitly from a later wallet callback could create an order only after funds were taken.
                         self.pendingElementsOrder.reject(error);
                     });
 
