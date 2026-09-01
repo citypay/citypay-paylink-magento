@@ -66,12 +66,30 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             $this->authoriseRequest($paymentIntentId)
         );
 
+        $authenResult = isset($result['authen_result']) ? strtoupper((string) $result['authen_result']) : null;
+        $authorisedFlag = null;
+        if (array_key_exists('authorised', $result)) {
+            // convert 'true'/'false', '1'/'0', boolean, numeric to boolean|null
+            $authorisedFlag = filter_var($result['authorised'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        }
+        $resultField = isset($result['result']) ? (string) $result['result'] : null;
+
         if ($this->isAuthorised($result)) {
             $this->logger->debug("CityPay:Elements: payment authorised, updating order");
             $this->registerAuthorisation($order, $result);
-        } else {
+        } elseif (($authenResult === 'N') || ($authorisedFlag === false) || ($resultField === 0)) {
+            // if payment not authorised, don't leave the order as pending-payment - cancel it
             $this->handleDeclineCancel($order, $result);
+        } else {
+            // unknown response / timeout: do not cancel; log the error.
+            $this->logger->warning('CityPay authorise returned a non-definitive response; not cancelling order', [
+                'orderId' => $order->getEntityId(),
+                'response' => $result
+            ]);
+
+            throw new LocalizedException(__('CityPay returned an invalid authorisation response.'));
         }
+
 
         return json_encode($result);
     }
@@ -98,6 +116,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             );
 
         if (!$approved) {
+            // if not verified, don't leave the order as pending-payment - cancel it
             $this->handleDeclineCancel($order, $result);
 
             throw new LocalizedException(__('The CityPay payment could not be verified.'));
