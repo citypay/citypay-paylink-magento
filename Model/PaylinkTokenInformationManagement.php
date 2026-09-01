@@ -419,9 +419,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
             // Orders paid before the transaction marker was introduced must
             // also treat a retried success as a no-op.
-            if ($orderState === Order::STATE_PROCESSING
-                || $orderStatus === Order::STATE_PROCESSING
-            ) {
+            if ($orderState === Order::STATE_PROCESSING || $orderStatus === Order::STATE_PROCESSING) {
                 return 'duplicate';
             }
 
@@ -474,8 +472,9 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         if ($options != null) {
             $optionsarray = explode(",", $options);
             array_walk($optionsarray, trimString);
-        } else
+        } else {
             $optionsarray = null;
+        }
 
         $postback_policy = $this->scopeConfig->getValue('payment/citypay_gateway/postback_policy', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $testmode = $this->scopeConfig->getValue('payment/citypay_gateway/testmode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
@@ -508,8 +507,10 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         if ($postback_policy != null) {
             $configData['postback_policy'] = $postback_policy;
         }
-        if ($passThroughHeaders != null)
+
+        if ($passThroughHeaders != null) {
             $configData['passThroughHeaders'] = $passThroughHeaders;
+        }
 
         $requestData = [
             'test' => $testmode,

@@ -69,6 +69,10 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         if ($this->isAuthorised($result)) {
             $this->logger->debug("CityPay:Elements: payment authorised, updating order");
             $this->registerAuthorisation($order, $result);
+        } elseif ($order->canCancel()) {
+            $this->logger->debug("CityPay:Elements: payment cancelled, updating order");
+            $order->addCommentToStatusHistory(__('CityPay payment was declined.'));
+            $this->orderRepository->save($order);
         }
 
         return json_encode($result);
@@ -96,6 +100,12 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             );
 
         if (!$approved) {
+            if ($order->canCancel()) {
+                $order->cancel();
+                $order->addCommentToStatusHistory(__('CityPay payment verification failed.'));
+                $this->orderRepository->save($order);
+            }
+
             throw new LocalizedException(__('The CityPay payment could not be verified.'));
         }
 
@@ -113,8 +123,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         return json_encode($response);
     }
 
-    private function createPaymentSession()
-    {
+    private function createPaymentSession() {
         $this->logger->debug("Creating payment session");
         $clientSession = $this->checkoutSession->getQuote();
 
@@ -265,8 +274,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
     }
 
     // HELPER FUNCTIONS
-    private function normalisePaymentIntentResponse($response)
-    {
+    private function normalisePaymentIntentResponse($response) {
         if (is_array($response)) {
             return $response;
         }
@@ -304,8 +312,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         return [];
     }
 
-    private function createPaymentIntentApi(): PaymentIntentApi
-    {
+    private function createPaymentIntentApi(): PaymentIntentApi {
         $clientId = $this->scopeConfig->getValue(
             'payment/citypay_gateway/client_id',
             ScopeInterface::SCOPE_STORE
@@ -330,16 +337,14 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         return new PaymentIntentApi(new \GuzzleHttp\Client(), $config);
     }
 
-    private function isAuthorised(array $result): bool
-    {
+    private function isAuthorised(array $result): bool {
         return filter_var(
             $result['authorised'] ?? false,
             FILTER_VALIDATE_BOOLEAN
         );
     }
 
-    private function registerAuthorisation($order, array $result): void
-    {
+    private function registerAuthorisation($order, array $result): void {
         $transactionNumber = $this->getTransactionNumber($result);
         $payment = $order->getPayment();
         $registeredTransaction = (string) $payment->getAdditionalInformation(
@@ -376,8 +381,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         $this->orderRepository->save($order);
     }
 
-    private function registerVerifiedPayment($order, array $result): void
-    {
+    private function registerVerifiedPayment($order, array $result): void {
         $transactionNumber = $this->getTransactionNumber($result);
         $payment = $order->getPayment();
         $verifiedTransaction = (string) $payment->getAdditionalInformation(
@@ -436,8 +440,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         }
     }
 
-    private function getTransactionNumber(array $result): string
-    {
+    private function getTransactionNumber(array $result): string {
         $transactionNumber = (string) ($result['transno'] ?? '');
 
         if (!preg_match('/^[0-9]+$/', $transactionNumber)
