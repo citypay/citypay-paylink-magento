@@ -69,10 +69,8 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         if ($this->isAuthorised($result)) {
             $this->logger->debug("CityPay:Elements: payment authorised, updating order");
             $this->registerAuthorisation($order, $result);
-        } elseif ($order->canCancel()) {
-            $this->logger->debug("CityPay:Elements: payment cancelled, updating order");
-            $order->addCommentToStatusHistory(__('CityPay payment was declined.'));
-            $this->orderRepository->save($order);
+        } else {
+            $this->handleDeclineCancel($order, $result);
         }
 
         return json_encode($result);
@@ -100,11 +98,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             );
 
         if (!$approved) {
-            if ($order->canCancel()) {
-                $order->cancel();
-                $order->addCommentToStatusHistory(__('CityPay payment verification failed.'));
-                $this->orderRepository->save($order);
-            }
+            $this->handleDeclineCancel($order, $result);
 
             throw new LocalizedException(__('The CityPay payment could not be verified.'));
         }
@@ -514,5 +508,35 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         }
 
         return $order;
+    }
+
+    private function handleDeclineCancel($order, array $result = []): void {
+        $payment = $order->getPayment();
+        $registeredAuth = (string) $payment->getAdditionalInformation(self::AUTH_TRANSACTION_KEY);
+        $registeredVerified = (string) $payment->getAdditionalInformation(self::VERIFIED_TRANSACTION_KEY);
+
+        if ($registeredAuth !== '' || $registeredVerified !== '') {
+            $this->logger->info('Ignoring decline: order already has a registered CityPay transaction.',
+                [
+                    'orderId' => $order->getEntityId(),
+                    'transno' => $result['transno'] ?? null
+                ]);
+            return;
+        }
+
+        if ($order->canCancel()) {
+            try {
+                $order->cancel();
+            } catch (\Throwable $e) {
+                $this->logger->error('Unable to cancel order after CityPay decline: ' . $e->getMessage(), ['orderId' => $order->getEntityId()]);
+            }
+
+            $order->addCommentToStatusHistory(__('CityPay payment was declined.'));
+            $this->orderRepository->save($order);
+            $this->logger->info('Order cancelled due to CityPay decline.', ['orderId' => $order->getEntityId()]);
+            return;
+        }
+
+        $this->logger->info('CityPay decline received but order is not cancelable; leaving order unchanged.', ['orderId' => $order->getEntityId()]);
     }
 }
