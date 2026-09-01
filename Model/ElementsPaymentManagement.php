@@ -62,34 +62,34 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         $this->logger->debug("CityPay:Elements: order validated");
 
         // Authorise payment
-        $result = $this->normalisePaymentIntentResponse(
-            $this->authoriseRequest($paymentIntentId)
-        );
-
-        $authenResult = isset($result['authen_result']) ? strtoupper((string) $result['authen_result']) : null;
-        $authorisedFlag = null;
-        if (array_key_exists('authorised', $result)) {
-            // convert 'true'/'false', '1'/'0', boolean, numeric to boolean|null
-            $authorisedFlag = filter_var($result['authorised'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        try {
+            $result = $this->normalisePaymentIntentResponse(
+                $this->authoriseRequest($paymentIntentId)
+            );
+        } catch (\Throwable $exception) {
+            $this->logger->error(
+                'CityPay authorisation request failed: ' . $exception->getMessage(),
+                ['orderId' => $order->getEntityId()]
+            );
+            $this->failForPaymentReview(
+                $order,
+                'CityPay authorisation could not be completed because the service call failed.',
+                'CityPay could not confirm the payment authorisation. The order requires payment review.'
+            );
         }
-        $resultField = isset($result['result']) ? (string) $result['result'] : null;
 
-        if ($this->isAuthorised($result)) {
+        if ($this->isAuthorisationApproved($result)) {
             $this->logger->debug("CityPay:Elements: payment authorised, updating order");
             $this->registerAuthorisation($order, $result);
-        } elseif (($authenResult === 'N') || ($authorisedFlag === false) || ($resultField === 0)) {
-            // if payment not authorised, don't leave the order as pending-payment - cancel it
-            $this->handleDeclineCancel($order, $result);
+        } elseif ($this->isDefiniteDecline($result)) {
+            $this->cancelPendingOrder($order, 'CityPay payment authorisation was declined.');
         } else {
-            // unknown response / timeout: do not cancel; log the error.
-            $this->logger->warning('CityPay authorise returned a non-definitive response; not cancelling order', [
-                'orderId' => $order->getEntityId(),
-                'response' => $result
-            ]);
-
-            throw new LocalizedException(__('CityPay returned an invalid authorisation response.'));
+            $this->failForPaymentReview(
+                $order,
+                'CityPay returned an inconclusive authorisation response.',
+                'CityPay could not confirm the payment authorisation. The order requires payment review.'
+            );
         }
-
 
         return json_encode($result);
     }
@@ -102,38 +102,61 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         $this->logger->debug("CityPay:Elements: validated order intent");
 
         // Verify payment
-        $result = $this->verifyAuth($paymentIntentId);
-
-        if (!is_array($result)) {
-            throw new LocalizedException(__('CityPay returned an invalid verification response.'));
+        try {
+            $result = $this->verifyAuth($paymentIntentId);
+        } catch (\Throwable $exception) {
+            $this->logger->error(
+                'CityPay verification request failed: ' . $exception->getMessage(),
+                ['orderId' => $order->getEntityId()]
+            );
+            $this->failForPaymentReview(
+                $order,
+                'CityPay verification could not be completed because the service call failed.',
+                'CityPay could not confirm the payment. The order requires payment review.'
+            );
         }
 
-        $approved =
-            ($result['result'] ?? null) === 'Accepted' && (int) ($result['result_id'] ?? 0) === 1
-            && in_array(strtoupper((string) ($result['trans_status'] ?? '')),
-                ['OPEN', 'O'],
-                true
+        if (!is_array($result)) {
+            $this->failForPaymentReview(
+                $order,
+                'CityPay returned an invalid verification response.',
+                'CityPay could not confirm the payment. The order requires payment review.'
             );
+        }
 
-        if (!$approved) {
-            // if not verified, don't leave the order as pending-payment - cancel it
-            $this->handleDeclineCancel($order, $result);
+        if ($this->isVerificationApproved($result)) {
+            $response = [
+                'approved' => true,
+                'result' => (string) $result['result'],
+                'resultId' => (int) $result['result_id'],
+                'transactionStatus' => (string) $result['trans_status'],
+                'transactionNumber' => (int) ($result['transno'] ?? 0),
+            ];
+
+            $this->registerVerifiedPayment($order, $result);
+            $this->logger->debug('CityPay payment verified', $response);
+
+            return json_encode($response);
+        }
+
+        if ($this->isDefiniteDecline($result)) {
+            if ($this->hasRegisteredPayment($order)) {
+                $this->moveOrderToPaymentReview(
+                    $order,
+                    'CityPay verification returned a definitive unsuccessful result after authorisation.'
+                );
+            } else {
+                $this->cancelPendingOrder($order, 'CityPay payment verification was declined.');
+            }
 
             throw new LocalizedException(__('The CityPay payment could not be verified.'));
         }
 
-        $response = [
-            'approved' => true,
-            'result' => (string) $result['result'],
-            'resultId' => (int) $result['result_id'],
-            'transactionStatus' => (string) $result['trans_status'],
-            'transactionNumber' => (int) ($result['transno'] ?? 0),
-        ];
-
-        $this->registerVerifiedPayment($order, $result);
-        $this->logger->debug('CityPay payment verified', $response);
-
-        return json_encode($response);
+        $this->failForPaymentReview(
+            $order,
+            'CityPay returned an inconclusive verification response.',
+            'CityPay could not confirm the payment. The order requires payment review.'
+        );
     }
 
     private function createPaymentSession() {
@@ -350,11 +373,74 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         return new PaymentIntentApi(new \GuzzleHttp\Client(), $config);
     }
 
-    private function isAuthorised(array $result): bool {
+    private function isAuthorisationApproved(array $result): bool {
+        return $this->normaliseBooleanField($result, 'authorised') === true
+            && $this->normaliseIntegerField($result, 'result') === 1
+            && $this->hasValidTransactionNumber($result);
+    }
+
+    private function isVerificationApproved(array $result): bool {
+        return strtoupper(trim((string) ($result['result'] ?? ''))) === 'ACCEPTED'
+            && $this->normaliseIntegerField($result, 'result_id') === 1
+            && in_array(strtoupper((string) ($result['trans_status'] ?? '')), ['O', 'OPEN'], true)
+            && $this->hasValidTransactionNumber($result);
+    }
+
+    private function isDefiniteDecline(array $result): bool {
+        $authorised = $this->normaliseBooleanField($result, 'authorised');
+        $resultCode = $this->normaliseIntegerField($result, 'result');
+        $resultId = $this->normaliseIntegerField($result, 'result_id');
+        $resultText = strtoupper(trim((string) ($result['result'] ?? '')));
+        $status = strtoupper(trim((string) ($result['trans_status'] ?? '')));
+
+        if ($authorised === true
+            || $resultCode === 1
+            || $resultId === 1
+            || $resultText === 'ACCEPTED'
+            || in_array($status, ['O', 'OPEN'], true)
+        ) {
+            return false;
+        }
+
+        return $authorised === false
+            || $resultCode === 0
+            || $resultId === 0
+            || strtoupper(trim((string) ($result['authen_result'] ?? ''))) === 'N'
+            || in_array($resultText, ['DECLINED', 'REJECTED', 'FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED'], true)
+            || in_array($status, ['D', 'R', 'C', 'E', 'DECLINED', 'REJECTED', 'CANCELLED', 'CANCELED', 'EXPIRED'], true);
+    }
+
+    private function normaliseBooleanField(array $result, string $key): ?bool {
+        if (!array_key_exists($key, $result)) {
+            return null;
+        }
+
+        if ($result[$key] === null || $result[$key] === '') {
+            return null;
+        }
+
         return filter_var(
-            $result['authorised'] ?? false,
-            FILTER_VALIDATE_BOOLEAN
+            $result[$key],
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
         );
+    }
+
+    private function normaliseIntegerField(array $result, string $key): ?int {
+        if (!array_key_exists($key, $result)) {
+            return null;
+        }
+
+        $value = filter_var($result[$key], FILTER_VALIDATE_INT);
+
+        return $value === false ? null : (int) $value;
+    }
+
+    private function hasValidTransactionNumber(array $result): bool {
+        $transactionNumber = trim((string) ($result['transno'] ?? ''));
+
+        return preg_match('/^[0-9]+$/', $transactionNumber) === 1
+            && (int) $transactionNumber > 0;
     }
 
     private function registerAuthorisation($order, array $result): void {
@@ -529,33 +615,75 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         return $order;
     }
 
-    private function handleDeclineCancel($order, array $result = []): void {
+    private function hasRegisteredPayment($order): bool {
         $payment = $order->getPayment();
-        $registeredAuth = (string) $payment->getAdditionalInformation(self::AUTH_TRANSACTION_KEY);
-        $registeredVerified = (string) $payment->getAdditionalInformation(self::VERIFIED_TRANSACTION_KEY);
 
-        if ($registeredAuth !== '' || $registeredVerified !== '') {
-            $this->logger->info('Ignoring decline: order already has a registered CityPay transaction.',
-                [
-                    'orderId' => $order->getEntityId(),
-                    'transno' => $result['transno'] ?? null
-                ]);
+        return (string) $payment->getAdditionalInformation(self::AUTH_TRANSACTION_KEY) !== ''
+            || (string) $payment->getAdditionalInformation(self::VERIFIED_TRANSACTION_KEY) !== '';
+    }
+
+    private function cancelPendingOrder($order, string $reason): void {
+        $awaitingPaymentStates = [
+            \Magento\Sales\Model\Order::STATE_NEW,
+            \Magento\Sales\Model\Order::STATE_PENDING_PAYMENT,
+        ];
+
+        if (!in_array((string) $order->getState(), $awaitingPaymentStates, true)
+            && !in_array((string) $order->getStatus(), $awaitingPaymentStates, true)
+        ) {
+            $this->moveOrderToPaymentReview(
+                $order,
+                $reason . ' Magento could not safely cancel the order in its current state.'
+            );
             return;
         }
 
-        if ($order->canCancel()) {
-            try {
-                $order->cancel();
-            } catch (\Throwable $e) {
-                $this->logger->error('Unable to cancel order after CityPay decline: ' . $e->getMessage(), ['orderId' => $order->getEntityId()]);
-            }
+        if ($this->hasRegisteredPayment($order) || !$order->canCancel()) {
+            $this->moveOrderToPaymentReview(
+                $order,
+                $reason . ' A payment transaction may already exist or the order is not cancellable.'
+            );
+            return;
+        }
 
-            $order->addCommentToStatusHistory(__('CityPay payment was declined.'));
+        try {
+            $order->cancel();
+            $order->addCommentToStatusHistory(__($reason));
             $this->orderRepository->save($order);
-            $this->logger->info('Order cancelled due to CityPay decline.', ['orderId' => $order->getEntityId()]);
+        } catch (\Throwable $exception) {
+            $this->logger->error(
+                'Unable to cancel an Elements order: ' . $exception->getMessage(),
+                ['orderId' => $order->getEntityId()]
+            );
+            $this->moveOrderToPaymentReview(
+                $order,
+                $reason . ' Magento could not complete the cancellation.'
+            );
+            return;
+        }
+    }
+
+    private function moveOrderToPaymentReview($order, string $reason): void {
+        if (in_array(
+            (string) $order->getState(),
+            [
+                \Magento\Sales\Model\Order::STATE_COMPLETE,
+                \Magento\Sales\Model\Order::STATE_CLOSED,
+                \Magento\Sales\Model\Order::STATE_CANCELED,
+            ],
+            true
+        )) {
             return;
         }
 
-        $this->logger->info('CityPay decline received but order is not cancelable; leaving order unchanged.', ['orderId' => $order->getEntityId()]);
+        $order->setState(\Magento\Sales\Model\Order::STATE_PAYMENT_REVIEW)
+            ->setStatus(\Magento\Sales\Model\Order::STATE_PAYMENT_REVIEW);
+        $order->addCommentToStatusHistory(__($reason));
+        $this->orderRepository->save($order);
+    }
+
+    private function failForPaymentReview($order, string $reason, string $message): void {
+        $this->moveOrderToPaymentReview($order, $reason);
+        throw new LocalizedException(__($message));
     }
 }
