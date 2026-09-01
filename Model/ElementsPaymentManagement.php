@@ -134,7 +134,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             ];
 
             $this->registerVerifiedPayment($order, $result);
-            $this->logger->debug('CityPay payment verified', $response);
+            $this->logger->debug('CityPay payment verified');
 
             return json_encode($response);
         }
