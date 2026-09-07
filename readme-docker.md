@@ -1,20 +1,39 @@
 # Docker Magento2
 
-Used https://github.com/markshust/docker-magento to create the docker instances needed.
+## Use ./init.sh when:
 
-## Steps
-* run script setup.sh inside the plugin folder.
-* magento endpoints
-  * https://magento.test/
-  * https://magento.test/admin
-* magento admin user
-  * username: citypay
-  * password: password123
-* Two factor authentication email in
-  * http://magento.test:1080/
+* first install
+* you changed .env BASE_URL / NGROK_URL
+* you want to install sample data
+* you changed Magento install/config logic
+* you reset the Magento folder/database
 
-Ngrok: 
-* ngrok http https://magento.test
+## Use docker compose up -d when:
+* Magento is already installed
+* you just stopped/restarted the AWS instance
+* you only need containers running again
 
-Manually copying files/folders to the container e.g.
-* bin/copytocontainer app/code/CityPay/Paylink/Model
+## Use the following to setup a new base_url:
+
+```
+docker compose exec -T -u www-data app bash -lc '
+cd /var/www/html
+bin/magento config:set web/unsecure/base_url "https://karleen-endocranial-neda.ngrok-free.dev"
+bin/magento config:set web/secure/base_url "https://karleen-endocranial-neda.ngrok-free.dev"
+bin/magento config:set web/secure/use_in_frontend 1
+bin/magento config:set web/secure/use_in_adminhtml 1
+bin/magento config:set web/secure/offloader_header X-Forwarded-Proto
+bin/magento config:set web/cookie/cookie_domain "karleen-endocranial-neda.ngrok-free.dev"
+bin/magento cache:flush
+'
+```
+
+### The to verify:
+```
+docker compose exec -T -u www-data app bash -lc '
+cd /var/www/html
+bin/magento config:show web/unsecure/base_url
+bin/magento config:show web/secure/base_url
+bin/magento config:show web/cookie/cookie_domain
+'
+```
