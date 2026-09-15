@@ -170,13 +170,15 @@ define(
                 });
             },
 
-            authorisePayment: function (paymentIntentId) {
-                console.log("CityPay:Elements:in authorisePayment");
+            authorisePayment: function (paymentIntentId, idempotencyKey) {
+                console.log("CityPay:Elements:in authorisePayment, payment intent and idempotency key: ", paymentIntentId, idempotencyKey);
+
                 return storage.post(
                     urlBuilder.createUrl('/citypay/elements/authorise', {}),
                     JSON.stringify({
                         paymentIntentId: paymentIntentId,
                         orderId: this.orderId,
+                        idempotencyKey: idempotencyKey
                     })
                 ).then(function (response) {
                     return typeof response === 'string' ? JSON.parse(response) : response;
@@ -194,6 +196,14 @@ define(
                 ).then(function (response) {
                     return typeof response === 'string' ? JSON.parse(response) : response;
                 });
+            },
+
+            isPaymentOutcomeUncertain: function (error) {
+                const message = error && error.responseJSON && error.responseJSON.message
+                        ? error.responseJSON.message
+                        : (error && error.message) || '';
+
+                return message.indexOf('PAYMENT_OUTCOME_UNCERTAIN') !== -1;
             },
 
             setWalletVisibility: function (containerId, visible) {
@@ -276,13 +286,22 @@ define(
                                     redirectOnSuccessAction.execute();
                                 }
                             } catch (error) {
+                                const uncertain =
+                                    self.isPaymentOutcomeUncertain(error);
+
                                 self.messageContainer.addErrorMessage({
-                                    message:
-                                        error.message ||
-                                        'Apple Pay could not be completed.'
+                                    message: uncertain
+                                        ? 'Your payment status could not be confirmed. Please do not retry the payment.'
+                                        : (
+                                            error.responseJSON?.message ||
+                                            error.message ||
+                                            'Apple Pay could not be completed.'
+                                        )
                                 });
 
-                                self.isPlaceOrderActionAllowed(true);
+                                self.isPlaceOrderActionAllowed(
+                                    !uncertain
+                                );
                             }
                         });
 
@@ -315,6 +334,7 @@ define(
 
                         self.googlePay.onTokeniseEnd(async function () {
                             self.isPlaceOrderActionAllowed(false);
+                            const idempotencyKey = crypto.randomUUID();
 
                             try {
                                 // Create Magento order first and retain its ID.
@@ -331,20 +351,23 @@ define(
                                 }
 
                                 const confirmResult = await self.googlePay.confirm({
-                                    intentId: self.paymentIntentId
+                                    intentId: self.paymentIntentId,
+                                    idempotencyKey: idempotencyKey,
                                 });
 
                                 if (confirmResult.status !== 'requires_authorisation') {
                                     throw new Error('Unexpected Google Pay status: ' + confirmResult.status);
                                 }
 
-                                const auth = await self.authorisePayment(self.paymentIntentId);
+                                const auth = await self.authorisePayment(self.paymentIntentId, idempotencyKey);
 
                                 if (auth.authorised !== true && auth.authorised !== 'true') {
                                     throw new Error('Google Pay authorisation was declined.');
                                 }
 
-                                const verifyResult = await self.verify(self.paymentIntentId);
+                                const verifyResult = auth.verified === true
+                                    ? { approved: true, recovered: true } : await self.verify(self.paymentIntentId);
+
                                 if (verifyResult.approved !== true) {
                                     throw new Error('Google Pay payment could not be verified.');
                                 }
@@ -356,10 +379,19 @@ define(
                                 }
 
                             } catch (error) {
+                                const uncertain = self.isPaymentOutcomeUncertain(error);
+
                                 self.messageContainer.addErrorMessage({
-                                    message: error.message || 'Google Pay could not be completed.'
+                                    message: uncertain
+                                        ? 'Your payment status could not be confirmed. Please do not retry the payment.'
+                                        : (
+                                            error.responseJSON?.message ||
+                                            error.message ||
+                                            'Google Pay could not be completed.'
+                                        )
                                 });
-                                self.isPlaceOrderActionAllowed(true);
+
+                                self.isPlaceOrderActionAllowed(!uncertain);
                             }
                         });
                         self.googlePay.onCancel(function () {
@@ -468,6 +500,8 @@ define(
 
             placeOrder:function (data, event) {
                 var self = this;
+                let allowPaymentRetry = true;
+
                 //alert('my placeOrder');
 
                 if (event) {
@@ -489,6 +523,7 @@ define(
                         .then(
                             function (value) {
                                 self.orderId = value;
+                                const idempotencyKey = crypto.randomUUID();
 
                                 if (self.isPaylinkMode()) {
                                     console.log("Placing order for Paylink")
@@ -505,23 +540,41 @@ define(
                                                 token: token
                                             });
                                         })
-                                        .then(function () {
+                                        .then(function (attachResult) {
+                                            console.log('CityPay:Elements: attach result:', attachResult);
+
+                                            if (attachResult.status !== 'requires_customer_confirmation') {
+                                                throw new Error('Unexpected CityPay attach status: ' + attachResult.status);
+                                            }
+
                                             return self.card.confirm({
                                                 intentId: self.paymentIntentId,
+                                                idempotencyKey: idempotencyKey
                                             });
+
                                             }).then(function (confirmResult) {
                                                 console.log("CityPay:Elements: confirm result: ");
 
                                                 if (confirmResult.status !== 'requires_authorisation') {
-                                                    return;
+                                                    // return;
+                                                    throw new Error('Unexpected CityPay confirm status: ' + confirmResult.status);
                                                 }
 
-                                                return self.authorisePayment(self.paymentIntentId);
+                                                return self.authorisePayment(self.paymentIntentId, idempotencyKey);
                                             }).then(function (authResult) {
                                                 console.log('Authorising result');
                                                 if (authResult.authorised !== true && authResult.authorised !== 'true') {
                                                     throw new Error('CityPay authorisation was declined.');
                                                 }
+
+                                                // back-end already reconciled and verified the payment
+                                                if (authResult.verified === true) {
+                                                    return {
+                                                        approved: true,
+                                                        recovered: true
+                                                    };
+                                                }
+
                                                 return self.verify(self.paymentIntentId);
 
                                             }).then(function (verifyResult) {
@@ -545,18 +598,25 @@ define(
                             }
                         )
                         .fail(function (error) {
+                            const uncertain = self.isPaymentOutcomeUncertain(error);
 
                             self.messageContainer.addErrorMessage({
-                                message: error.message || 'The card payment could not be completed.'
+                                message: uncertain
+                                    ? 'Your payment status could not be confirmed. Please do not retry the payment.'
+                                    : (
+                                        error.responseJSON?.message ||
+                                        error.message ||
+                                        'The card payment could not be completed.'
+                                    )
                             });
+
+                            allowPaymentRetry = !uncertain;
                         })
                         .always(
                             function () {
-                                self.isPlaceOrderActionAllowed(true);
+                                self.isPlaceOrderActionAllowed(allowPaymentRetry);
                             }
                         );
-
-
 
                     return true;
                 }

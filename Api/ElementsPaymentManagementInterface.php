@@ -20,9 +20,10 @@ interface ElementsPaymentManagementInterface
     /**
      * @param string $paymentIntentId
      * @param int $orderId
+     * @param string $idempotencyKey
      * @return string
      */
-    public function authorise($paymentIntentId, $orderId);
+    public function authorise($paymentIntentId, $orderId, $idempotencyKey);
 
 
     /**

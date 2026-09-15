@@ -54,40 +54,109 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         return json_encode($this->createPaymentSession());
     }
 
-    public function authorise($paymentIntentId, $orderId) {
+    public function authorise($paymentIntentId, $orderId, $idempotencyKey) {
         $this->logger->debug("CityPay:Elements: In authorise(), calling authoriseRequest");
 
         // Verify this is the correct order
         $order = $this->validateOrderIntent($paymentIntentId, $orderId);
+
+        // Check order eligibility (making sure this order is not cancelled, already paid or payment in review)
+        $order_status = $order->getState();
+        if ($order_status !== \Magento\Sales\Model\Order::STATE_PENDING_PAYMENT || $this->hasRegisteredPayment($order)) {
+            throw new LocalizedException(
+                __('This order cannot accept another payment attempt. Please check your order status or contact us.')
+            );
+        }
+
         $this->logger->debug("CityPay:Elements: order validated");
 
-        // Authorise payment
+        $idempotencyKey = trim((string) $idempotencyKey);
+
+        if ($idempotencyKey === '') {
+            throw new LocalizedException(__('Missing CityPay payment idempotency key.'));
+        }
+
+        // Authorise payment with payment intent and idempotency key
         try {
             $result = $this->normalisePaymentIntentResponse(
-                $this->authoriseRequest($paymentIntentId)
+                $this->authoriseRequest(
+                    $paymentIntentId,
+                    $idempotencyKey
+                )
             );
         } catch (\Throwable $exception) {
-            $this->logger->error(
-                'CityPay authorisation request failed: ' . $exception->getMessage(),
-                ['orderId' => $order->getEntityId()]
+            $this->logger->warning(
+                'CityPay authorisation outcome unknown; retrying with same idempotency key.',
+                [
+                    'orderId' => $order->getEntityId(),
+                    'paymentIntentId' => $paymentIntentId,
+                    'idempotencyKey' => $idempotencyKey,
+                ]
             );
-            $this->failForPaymentReview(
-                $order,
-                'CityPay authorisation could not be completed because the service call failed.',
-                'CityPay could not confirm the payment authorisation. The order requires payment review.'
-            );
+
+            try {
+                // SAME logical operation → SAME key.
+                $result = $this->normalisePaymentIntentResponse(
+                    $this->authoriseRequest(
+                        $paymentIntentId,
+                        $idempotencyKey
+                    )
+                );
+            } catch (\Throwable $secondException) {
+
+                // We still do not know whether CityPay processed the authorisation.
+                try {
+                    $verification = $this->verifyAuth(
+                        $paymentIntentId
+                    );
+                } catch (\Throwable $verificationException) {
+                    $this->failForPaymentReview(
+                        $order,
+                        'CityPay authorisation outcome could not be reconciled.',
+                        'PAYMENT_OUTCOME_UNCERTAIN: Your payment status could not be confirmed. Please do not retry the payment.'
+                    );
+                }
+
+                if ($this->isVerificationApproved($verification)) {
+                    // CityPay proves that the first authorisation actually succeeded.
+                    $this->registerVerifiedPayment(
+                        $order,
+                        $verification
+                    );
+
+                    return json_encode([
+                        'authorised' => true,
+                        'verified' => true,
+                        'recovered' => true,
+                        'result' => 18,
+                        'trans_status' =>
+                            (string) ($verification['trans_status'] ?? ''),
+                        'transno' =>
+                            (int) ($verification['transno'] ?? 0),
+                    ]);
+                }
+
+                // Verification didn't prove success, but also don't assume that a new charge is automatically safe.
+                $this->failForPaymentReview(
+                    $order,
+                    'CityPay authorisation outcome could not be reconciled.',
+                    'PAYMENT_OUTCOME_UNCERTAIN: Your payment status could not be confirmed. Please do not retry the payment.'
+                );
+            }
         }
 
         if ($this->isAuthorisationApproved($result)) {
             $this->logger->debug("CityPay:Elements: payment authorised, updating order");
             $this->registerAuthorisation($order, $result);
         } elseif ($this->isDefiniteDecline($result)) {
-            $this->cancelPendingOrder($order, 'CityPay payment authorisation was declined.');
+            // don't cancel the magento order yet
+            $order->addCommentToStatusHistory(__('CityPay payment authorisation was declined.'));
+            $this->orderRepository->save($order);
         } else {
             $this->failForPaymentReview(
                 $order,
                 'CityPay returned an inconclusive authorisation response.',
-                'CityPay could not confirm the payment authorisation. The order requires payment review.'
+                'PAYMENT_OUTCOME_UNCERTAIN: CityPay could not confirm the payment authorisation. The order requires payment review.'
             );
         }
 
@@ -112,7 +181,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             $this->failForPaymentReview(
                 $order,
                 'CityPay verification could not be completed because the service call failed.',
-                'CityPay could not confirm the payment. The order requires payment review.'
+                'PAYMENT_OUTCOME_UNCERTAIN: CityPay could not confirm the payment. The order requires payment review.'
             );
         }
 
@@ -120,7 +189,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             $this->failForPaymentReview(
                 $order,
                 'CityPay returned an invalid verification response.',
-                'CityPay could not confirm the payment. The order requires payment review.'
+                'PAYMENT_OUTCOME_UNCERTAIN: CityPay could not confirm the payment. The order requires payment review.'
             );
         }
 
@@ -141,21 +210,28 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
 
         if ($this->isDefiniteDecline($result)) {
             if ($this->hasRegisteredPayment($order)) {
-                $this->moveOrderToPaymentReview(
+                $this->failForPaymentReview(
                     $order,
-                    'CityPay verification returned a definitive unsuccessful result after authorisation.'
+                    'CityPay verification returned a definitive unsuccessful result after authorisation.',
+                    'PAYMENT_OUTCOME_UNCERTAIN: CityPay could not confirm the payment. Please do not retry the payment.'
                 );
-            } else {
-                $this->cancelPendingOrder($order, 'CityPay payment verification was declined.');
             }
 
-            throw new LocalizedException(__('The CityPay payment could not be verified.'));
+            $order->addCommentToStatusHistory(
+                __('CityPay payment verification was declined.')
+            );
+
+            $this->orderRepository->save($order);
+
+            throw new LocalizedException(
+                __('The CityPay payment could not be verified.')
+            );
         }
 
         $this->failForPaymentReview(
             $order,
             'CityPay returned an inconclusive verification response.',
-            'CityPay could not confirm the payment. The order requires payment review.'
+            'PAYMENT_OUTCOME_UNCERTAIN: CityPay could not confirm the payment. The order requires payment review.'
         );
     }
 
@@ -260,13 +336,21 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
 
     /**
      * @param string $paymentIntentId
+     * @param string $idempotencyKey
      * @return string
      */
-    private function authoriseRequest($paymentIntentId) {
-        $apiInstance = $this->createPaymentIntentApi();
+    private function authoriseRequest($paymentIntentId, $idempotencyKey) {
+        $apiInstance = $this->createPaymentIntentApi($idempotencyKey);
         $authoriseRequest = new AuthorisePaymentIntentRequestModel([
-            'payment_intent_id' => $paymentIntentId,
+            'payment_intent_id' => $paymentIntentId
         ]);
+
+        $this->logger->debug('CityPay authorisation request',
+            [
+                'paymentIntentId' => $paymentIntentId,
+                'idempotencyKey' => $idempotencyKey,
+            ]
+        );
 
         return $apiInstance->authorisePaymentIntent($authoriseRequest);
 
@@ -348,7 +432,7 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         return [];
     }
 
-    private function createPaymentIntentApi(): PaymentIntentApi {
+    private function createPaymentIntentApi(?string $idempotencyKey = null): PaymentIntentApi {
         $clientId = $this->scopeConfig->getValue(
             'payment/citypay_gateway/client_id',
             ScopeInterface::SCOPE_STORE
@@ -370,19 +454,35 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             ->setApiKey('cp-api-key', $apiKey)
             ->setHost($testMode ? 'https://sandbox.citypay.com' : 'https://api.citypay.com');
 
-        return new PaymentIntentApi(new \GuzzleHttp\Client(), $config);
+        $options = [];
+
+        if ($idempotencyKey !== null && $idempotencyKey !== '') {
+            $options['headers'] = [
+                'X-Idempotency-Key' => $idempotencyKey,
+            ];
+        }
+
+        return new PaymentIntentApi(new \GuzzleHttp\Client($options), $config);
     }
 
     private function isAuthorisationApproved(array $result): bool {
-        return $this->normaliseBooleanField($result, 'authorised') === true
-            && $this->normaliseIntegerField($result, 'result') === 1
-            && $this->hasValidTransactionNumber($result);
+        $authorised = $this->normaliseBooleanField($result, 'authorised');
+
+        $resultCode = $this->normaliseIntegerField($result, 'result');
+
+        return $authorised === true && in_array($resultCode, [1, 18], true) && $this->hasValidTransactionNumber($result);
     }
 
     private function isVerificationApproved(array $result): bool {
-        return strtoupper(trim((string) ($result['result'] ?? ''))) === 'ACCEPTED'
-            && $this->normaliseIntegerField($result, 'result_id') === 1
-            && in_array(strtoupper((string) ($result['trans_status'] ?? '')), ['O', 'OPEN'], true)
+        $resultText = strtoupper(trim((string) ($result['result'] ?? '')));
+
+        $resultId = $this->normaliseIntegerField($result, 'result_id');
+
+        $status = strtoupper(trim((string) ($result['trans_status'] ?? '')));
+
+        return in_array($resultText, ['ACCEPTED', 'VERIFIED'], true)
+            && in_array($resultId, [1, 18], true)
+            && in_array($status, ['O', 'OPEN', 'V', 'VERIFIED'], true)
             && $this->hasValidTransactionNumber($result);
     }
 
@@ -686,4 +786,5 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         $this->moveOrderToPaymentReview($order, $reason);
         throw new LocalizedException(__($message));
     }
+
 }

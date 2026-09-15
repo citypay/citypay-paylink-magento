@@ -1,4 +1,4 @@
-<img src="view/frontend/web/images/citypay-secure.svg" height="75"/>
+<img src="view/frontend/web/images/citypay-icon-navy.svg" height="75"/>
      
 # Magento 2 Payment Module
 
