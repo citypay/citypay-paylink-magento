@@ -22,6 +22,7 @@ use Magento\Sales\Model\Order\Email\Sender\OrderSender;
 class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentManagementInterface {
     private const AUTH_TRANSACTION_KEY = 'citypay_elements_authorised_transaction';
     private const VERIFIED_TRANSACTION_KEY = 'citypay_elements_verified_transaction';
+    private const IDEMPOTENCY_KEY = 'citypay_elements_idempotency_key';
 
     private $checkoutSession;
     private $scopeConfig;
@@ -60,21 +61,48 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         // Verify this is the correct order
         $order = $this->validateOrderIntent($paymentIntentId, $orderId);
 
-        // Check order eligibility (making sure this order is not cancelled, already paid or payment in review)
-        $order_status = $order->getState();
-        if ($order_status !== \Magento\Sales\Model\Order::STATE_PENDING_PAYMENT || $this->hasRegisteredPayment($order)) {
-            throw new LocalizedException(
-                __('This order cannot accept another payment attempt. Please check your order status or contact us.')
-            );
-        }
-
-        $this->logger->debug("CityPay:Elements: order validated");
-
         $idempotencyKey = trim((string) $idempotencyKey);
 
         if ($idempotencyKey === '') {
             throw new LocalizedException(__('Missing CityPay payment idempotency key.'));
         }
+
+        $storedIdempotencyKey = (string) $order->getPayment()
+            ->getAdditionalInformation(self::IDEMPOTENCY_KEY);
+
+        if ($this->hasRegisteredPayment($order)) {
+            if ($storedIdempotencyKey !== '' && hash_equals($storedIdempotencyKey, $idempotencyKey)) {
+                return $this->recoverAuthorisation($order, $paymentIntentId);
+            }
+
+            throw new LocalizedException(
+                __('This order cannot accept another payment attempt. Please check your order status or contact us.')
+            );
+        }
+
+        // Only the same logical operation may reuse a claimed payment attempt.
+        if ($storedIdempotencyKey !== '' && !hash_equals($storedIdempotencyKey, $idempotencyKey)) {
+            throw new LocalizedException(
+                __('A different CityPay payment attempt is already in progress for this order.')
+            );
+        }
+
+        // Check order eligibility (making sure this order is not cancelled or in payment review).
+        if ($order->getState() !== \Magento\Sales\Model\Order::STATE_PENDING_PAYMENT) {
+            throw new LocalizedException(
+                __('This order cannot accept another payment attempt. Please check your order status or contact us.')
+            );
+        }
+
+        if ($storedIdempotencyKey === '') {
+            $order->getPayment()->setAdditionalInformation(
+                self::IDEMPOTENCY_KEY,
+                $idempotencyKey
+            );
+            $this->orderRepository->save($order);
+        }
+
+        $this->logger->debug("CityPay:Elements: order validated");
 
         // Authorise payment with payment intent and idempotency key
         try {
@@ -90,7 +118,6 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
                 [
                     'orderId' => $order->getEntityId(),
                     'paymentIntentId' => $paymentIntentId,
-                    'idempotencyKey' => $idempotencyKey,
                 ]
             );
 
@@ -149,7 +176,11 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
             $this->logger->debug("CityPay:Elements: payment authorised, updating order");
             $this->registerAuthorisation($order, $result);
         } elseif ($this->isDefiniteDecline($result)) {
-            // don't cancel the magento order yet
+            // The outcome is known and a new customer attempt may use a new key.
+            $order->getPayment()->setAdditionalInformation(
+                self::IDEMPOTENCY_KEY,
+                null
+            );
             $order->addCommentToStatusHistory(__('CityPay payment authorisation was declined.'));
             $this->orderRepository->save($order);
         } else {
@@ -348,7 +379,6 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         $this->logger->debug('CityPay authorisation request',
             [
                 'paymentIntentId' => $paymentIntentId,
-                'idempotencyKey' => $idempotencyKey,
             ]
         );
 
@@ -391,6 +421,37 @@ class ElementsPaymentManagement implements \CityPay\Paylink\Api\ElementsPaymentM
         );
 
         return json_decode((string) $response->getBody(), true);
+    }
+
+    private function recoverAuthorisation($order, $paymentIntentId) {
+        try {
+            $result = $this->verifyAuth($paymentIntentId);
+        } catch (\Throwable $exception) {
+            $this->failForPaymentReview(
+                $order,
+                'CityPay authorisation retry could not be reconciled.',
+                'PAYMENT_OUTCOME_UNCERTAIN: Your payment status could not be confirmed. Please do not retry the payment.'
+            );
+        }
+
+        if (is_array($result) && $this->isVerificationApproved($result)) {
+            $this->registerVerifiedPayment($order, $result);
+
+            return json_encode([
+                'authorised' => true,
+                'verified' => true,
+                'recovered' => true,
+                'result' => 18,
+                'trans_status' => (string) ($result['trans_status'] ?? ''),
+                'transno' => (int) ($result['transno'] ?? 0),
+            ]);
+        }
+
+        $this->failForPaymentReview(
+            $order,
+            'CityPay authorisation retry returned an inconclusive result.',
+            'PAYMENT_OUTCOME_UNCERTAIN: Your payment status could not be confirmed. Please do not retry the payment.'
+        );
     }
 
     // HELPER FUNCTIONS

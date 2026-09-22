@@ -206,6 +206,18 @@ define(
                 return message.indexOf('PAYMENT_OUTCOME_UNCERTAIN') !== -1;
             },
 
+            getIdempotencyKey: function () {
+                if (!this.idempotencyKey) {
+                    this.idempotencyKey = crypto.randomUUID();
+                }
+
+                return this.idempotencyKey;
+            },
+
+            clearIdempotencyKey: function () {
+                this.idempotencyKey = null;
+            },
+
             setWalletVisibility: function (containerId, visible) {
                 const walletGrid = document.getElementById('citypay-wallet-grid');
                 const walletContainer = document.getElementById(containerId);
@@ -262,10 +274,6 @@ define(
                             return self.placePendingElementsOrder('apple_pay');
                         });
                         self.applePay.onAuthoriseEnd(async function (event) {
-                            if (!event.success) {
-                                self.isPlaceOrderActionAllowed(true);
-                                return;
-                            }
 
                             try {
                                 self.orderId = await self.placePendingElementsOrder(
@@ -334,7 +342,7 @@ define(
 
                         self.googlePay.onTokeniseEnd(async function () {
                             self.isPlaceOrderActionAllowed(false);
-                            const idempotencyKey = crypto.randomUUID();
+                            const idempotencyKey = self.getIdempotencyKey();
 
                             try {
                                 // Create Magento order first and retain its ID.
@@ -362,6 +370,10 @@ define(
                                 const auth = await self.authorisePayment(self.paymentIntentId, idempotencyKey);
 
                                 if (auth.authorised !== true && auth.authorised !== 'true') {
+                                    if (auth.authorised === false || auth.authorised === 'false') {
+                                        self.clearIdempotencyKey();
+                                    }
+
                                     throw new Error('Google Pay authorisation was declined.');
                                 }
 
@@ -372,6 +384,7 @@ define(
                                     throw new Error('Google Pay payment could not be verified.');
                                 }
 
+                                self.clearIdempotencyKey();
                                 self.afterPlaceOrder();
 
                                 if (self.redirectAfterPlaceOrder) {
@@ -523,12 +536,13 @@ define(
                         .then(
                             function (value) {
                                 self.orderId = value;
-                                const idempotencyKey = crypto.randomUUID();
 
                                 if (self.isPaylinkMode()) {
                                     console.log("Placing order for Paylink")
                                     self.getPLTokenDeferredObject();
                                 } else if (self.isElementsMode()) {
+                                    const idempotencyKey = self.getIdempotencyKey();
+
                                     console.log("Placing Order for ElementsPaymentManagement");
 
                                     return self.card.tokenise()
@@ -564,6 +578,10 @@ define(
                                             }).then(function (authResult) {
                                                 console.log('Authorising result');
                                                 if (authResult.authorised !== true && authResult.authorised !== 'true') {
+                                                    if (authResult.authorised === false || authResult.authorised === 'false') {
+                                                        self.clearIdempotencyKey();
+                                                    }
+
                                                     throw new Error('CityPay authorisation was declined.');
                                                 }
 
@@ -584,6 +602,7 @@ define(
                                                     throw new Error('CityPay payment was not approved.');
                                                 }
 
+                                                self.clearIdempotencyKey();
                                                 self.messageContainer.addSuccessMessage({
                                                     message: 'Payment approved. Redirecting to your order confirmation.'
                                                 });
