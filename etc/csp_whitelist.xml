@@ -5,8 +5,6 @@
         <policy id="script-src">
             <values>
                 <value id="citypay-js" type="host">https://js.citypay.com</value>
-                <value id="citypay-local-script" type="host">https://dev.citypay.local:8080</value>
-                <value id="citypay-localhost-script" type="host">https://localhost:8080</value>
             </values>
         </policy>
         <policy id="connect-src">
@@ -14,22 +12,18 @@
                 <value id="citypay-js" type="host">https://js.citypay.com</value>
                 <value id="citypay-api" type="host">https://api.citypay.com</value>
                 <value id="citypay-sandbox" type="host">https://sandbox.citypay.com</value>
-                <value id="citypay-secure" type="host">https://secure.citypay.com</value>
-                <value id="citypay-local-connect" type="host">https://dev.citypay.local:8080</value>
-                <value id="citypay-localhost-connect" type="host">https://localhost:8080</value>
+                <value id="citypay-payments" type="host">https://payments.citypay.com</value>
             </values>
         </policy>
         <policy id="frame-src">
             <values>
                 <value id="citypay-js" type="host">https://js.citypay.com</value>
-                <value id="citypay-secure" type="host">https://secure.citypay.com</value>
-                <value id="citypay-local-frame" type="host">https://dev.citypay.local:8080</value>
-                <value id="citypay-localhost-frame" type="host">https://localhost:8080</value>
+                <value id="citypay-payments" type="host">https://payments.citypay.com</value>
             </values>
         </policy>
         <policy id="img-src">
             <values>
-                <value id="citypay-secure" type="host">https://secure.citypay.com</value>
+                <value id="citypay-payments" type="host">https://payments.citypay.com</value>
             </values>
         </policy>
     </policies>
