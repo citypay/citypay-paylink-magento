@@ -471,15 +471,13 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
 
         if ($options != null) {
             $optionsarray = explode(",", $options);
-            array_walk($optionsarray, trimString);
+            array_walk($optionsarray, [$this, 'trimString']);
         } else {
             $optionsarray = null;
         }
 
         $postback_policy = $this->scopeConfig->getValue('payment/citypay_gateway/postback_policy', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $testmode = $this->scopeConfig->getValue('payment/citypay_gateway/testmode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-
-        $passThroughHeaders = [];
 
         #get storecode for postback url
         $storeId = $order->getStoreId();
@@ -508,8 +506,8 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             $configData['postback_policy'] = $postback_policy;
         }
 
-        if ($passThroughHeaders != null) {
-            $configData['passThroughHeaders'] = $passThroughHeaders;
+        if ($optionsarray != null) {
+            $configData['options'] = $optionsarray;
         }
 
         $requestData = [
@@ -522,9 +520,6 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
         ];
         if ($orderconfirmationemail) {
             $requestData['email'] = $orderconfirmationemail;
-        }
-        if ($optionsarray != null) {
-            $requestData['options'] = $optionsarray;
         }
         $requestData['config'] = $configData;
         $requestData['cardholder'] = $cardholder;
@@ -548,7 +543,7 @@ class PaylinkTokenInformationManagement implements \CityPay\Paylink\Api\PaylinkT
             ->setBody($request)
             ->setMethod('POST')
             ->setHeaders(array('content-type:application/json'))
-            ->setUri('https://secure.citypay.com/paylink3/create')
+            ->setUri('https://payments.citypay.com/create')
             ->build();
     }
 
